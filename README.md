@@ -1,7 +1,6 @@
 <div align="center">
 
 # 🛵 Vehicle CAN Diagnostic Tool
-<img src="docs/images/home-screen.png" alt="VCD Tool dashboard home screen" width="640">
 
 
 **VCD Tool is an ESP32-based Ather vehicle CAN diagnostic dashboard. It presents available vehicle, battery, motor/controller, charger, firmware, and thermal telemetry from the connected vehicle. Displayed values depend on the signals decoded by the firmware.**
@@ -14,6 +13,7 @@
 
 
 
+<img src="docs/images/home-screen.png" alt="VCD Tool dashboard home screen" width="640">
 </div>
 
 ---
