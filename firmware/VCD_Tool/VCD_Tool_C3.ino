@@ -33,7 +33,6 @@ struct Telemetry {
   bool     forcedEco, smartEco;
   bool     seatLock, chargerLock1, chargerLock2;
   bool     chargerConnected;
-  // ===== EXTRA (newly discovered) fields =====
   int16_t  cellTemp[5];
   int16_t  afeDieTemp, packCurrent;
   int16_t  humidity, bmsAmbient;
@@ -51,25 +50,21 @@ struct Telemetry {
   uint64_t bmsUptimeMs;
   uint8_t  bmsHwVer, bmsFw[3], bcmFw[3], gtwFw[3], motorFw[3];
   char     binId[16];
-  // ===== v4.9 additions =====
-  uint16_t pduVoltage;              // 0x102 D6-D7, confirmed ~12.0-12.1 V
-  float    chgSocLimit;             // 0x206 D4-D7, float32 - confirmed by real charging test
-  int16_t  controllerTemp;          // 0x18C D4-D5, bit-packed - 2nd of 3 distinct temperatures
-  int16_t  motorMcuTemp;            // 0x209 D2 - 3rd, independent temperature reading
-  int16_t  throttleOut, throttle1, throttle3;  // 0x38C, bit-packed
-  int32_t  tcRpm;                   // 0x510 - original sketch's RPM frame (working hypothesis: Traction Control RPM)
-  int32_t  mcRpm;                   // 0x601 - probable real motor/wheel-speed RPM (seen only during a real ride)
-  char     vin[20];                 // 0x91+0x92+0x93 ASCII (second-scooter / service-session only)
-  char     scooterId[10];           // 0x7A ASCII (second-scooter / service-session only)
-  unsigned long lastDiagMs;         // last time a 0x7B1/0x7B9 diagnostic frame was seen
-  // ===== fields missing from this build, added back in =====
-  uint8_t  navJoystick;             // 0x101 D1 bits 0-2, raw code (which code = which direction unconfirmed)
-  uint8_t  parkAssistA, parkAssistB;             // 0x120 / 0x121, one-shot triggers (probable Parking Assist)
+  uint16_t pduVoltage;              
+  float    chgSocLimit;             
+  int16_t  controllerTemp;          
+  int16_t  motorMcuTemp;            
+  int16_t  throttleOut, throttle1, throttle3;  
+  int32_t  tcRpm;                   
+  int32_t  mcRpm;                   
+  char     vin[20];                 
+  char     scooterId[10];           
+  unsigned long lastDiagMs;        
+
+  uint8_t  navJoystick;             
+  uint8_t  parkAssistA, parkAssistB;             
   unsigned long lastParkAMs, lastParkBMs;
-  unsigned long lastVinMs, lastSidMs, lastGtwMs;  // freshness: these only update when their rare
-                                                   // broadcast frame is actually on the bus - nothing in
-                                                   // listen-only code can make that happen sooner, so this
-                                                   // just shows how old the value is instead of a silent "--"
+  unsigned long lastVinMs, lastSidMs, lastGtwMs;  
 };
 
 Telemetry snap;
@@ -859,10 +854,10 @@ void IRAM_ATTR applyFrame(Telemetry &t, const twai_message_t &m){
     case 0x18c:
       if(m.data_length_code<5)return;
       t.motorI=((d[2]>>5)|((d[3]&31)<<3))+((((d[3]>>5)|((d[4]&31)<<3))&1)*256)-(((d[3]>>5)&1)*512);
-      t.motorTemp=(((d[4]&63)<<2)|(d[3]>>6))-40;                                   // Motor Temp
-      if(m.data_length_code>=6) t.controllerTemp=(((d[5]&63)<<2)|(d[4]>>6))-40;    // Controller Temp (distinct from Motor Temp)
+      t.motorTemp=(((d[4]&63)<<2)|(d[3]>>6))-40;                                   
+      if(m.data_length_code>=6) t.controllerTemp=(((d[5]&63)<<2)|(d[4]>>6))-40;    
       break;
-    case 0x209: if(m.data_length_code<3)return; t.motorMcuTemp=(int16_t)d[2]; break;  // Motor MCU Temp (3rd, independent reading)
+    case 0x209: if(m.data_length_code<3)return; t.motorMcuTemp=(int16_t)d[2]; break;  
   }
 }
 
