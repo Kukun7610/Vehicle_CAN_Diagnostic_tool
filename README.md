@@ -126,7 +126,7 @@ The dashboard polls four lightweight JSON endpoints every 1.5 seconds. See [Algo
 
 - This tool is built as a **read-only** reader. Even so, you are solely responsible for any wiring or connections you make to your vehicle.
 - Always power the ESP32 down before wiring or re-wiring.
-- This is a community, open-source project. **It is not affiliated with, endorsed by, or sponsored by Ather Energy Limited.** *Ather*, *Ather 450X*, *Ather Rizta* and related names are trademarks of their respective owners.
+- This is a community, open-source project. **It is not affiliated with, endorsed by, or sponsored by Ather Energy Limited.** *Ather*, *Ather 450X*, *Ather Rizta* and related names are trademarks of **Ather Energy Limited**..
 - Several signals are decoded from community reverse-engineering and are **not officially documented**. Treat values marked *Estimated* or *Hypothesis* with caution.
 - The authors and contributors accept no liability for damage or loss arising from use of this project.
 
@@ -142,10 +142,9 @@ Contributions are welcome: new signals, bug fixes, documentation, translations, 
 
 This project would not exist without the original community work on Ather CAN diagnostics.
 
-- **[SAM0-0](https://github.com/SAM0-0)** — author of **[ATHER-OBD-READER](https://github.com/SAM0-0/ATHER-OBD-READER)**. A number of the CAN signal definitions used in this firmware were taken from, or derived from, that project's reverse-engineering work. Thank you for making it open source. A ready-made plug-and-play device is also available from the original author at **[a-obd.in](https://a-obd.in/)**.
+- **[SAM0-0](https://github.com/SAM0-0)** — author of **[ATHER-OBD-READER](https://github.com/SAM0-0/ATHER-OBD-READER)**. A number of the CAN signal definitions used in this firmware were taken from, or derived from.
 - **[Kukun7610](https://github.com/Kukun7610)** — author and maintainer of the Vehicle CAN Diagnostic Tool; contributed the *Extra* battery/vehicle values to the original project.
 
-> **Original Project:** [Ather OBD Diagnostic Reader by SAM0-0](https://github.com/SAM0-0/ATHER-OBD-READER)
 
 ## 📄 License
 
