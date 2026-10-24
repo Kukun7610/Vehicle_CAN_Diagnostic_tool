@@ -60,7 +60,6 @@ struct Telemetry {
   char     vin[20];                 
   char     scooterId[10];           
   unsigned long lastDiagMs;        
-
   uint8_t  navJoystick;             
   uint8_t  parkAssistA, parkAssistB;             
   unsigned long lastParkAMs, lastParkBMs;
@@ -811,7 +810,7 @@ void IRAM_ATTR applyFrame(Telemetry &t, const twai_message_t &m){
       if(m.data_length_code<4)return;
       t.chargerIV=d[0]|(d[1]<<8)|(d[2]<<16)|((uint32_t)d[3]<<24);
       break;
-    // ===== EXTRA (newly discovered) frames =====
+  
     case 0x130: if(m.data_length_code<5)return; t.bmsUptimeMs=(uint64_t)d[0]|((uint64_t)d[1]<<8)|((uint64_t)d[2]<<16)|((uint64_t)d[3]<<24)|((uint64_t)d[4]<<32); break;
     case 0x136: if(m.data_length_code<8)return; for(int i=0;i<4;i++) t.cellTemp[i]=(int16_t)(d[i*2]+(d[i*2+1]<<8)); break;
     case 0x137: if(m.data_length_code<8)return; t.cellTemp[4]=(int16_t)(d[0]+(d[1]<<8)); t.eftTemp=(int16_t)(d[2]+(d[3]<<8)); t.eciTemp=(int16_t)(d[4]+(d[5]<<8)); t.senseTemp=(int16_t)(d[6]+(d[7]<<8)); break;
@@ -843,14 +842,14 @@ void IRAM_ATTR applyFrame(Telemetry &t, const twai_message_t &m){
       t.throttle3=((d[5]>>4)|((d[6]&15)<<4))-(((d[6]>>3)&1)*256);
       t.throttle1=((d[6]>>4)|((d[7]&15)<<4))-(((d[7]>>3)&1)*256);
       break;
-    case 0x206: if(m.data_length_code<8)return; { float f; memcpy(&f,&d[4],4); t.chgSocLimit=f; } break;  // confirmed: charge SoC limit
-    case 0x91: if(m.data_length_code<8)return; memcpy(t.vin,d,8); t.lastVinMs=millis(); break;  // VIN broadcast part 1
-    case 0x92: if(m.data_length_code<8)return; memcpy(t.vin+8,d,8); t.vin[16]=0; t.lastVinMs=millis(); break;  // VIN broadcast part 2
-    case 0x93: if(m.data_length_code<1)return; t.vin[16]=(char)d[0]; t.vin[17]=0; t.lastVinMs=millis(); break;  // VIN broadcast part 3
-    case 0x7A: if(m.data_length_code<8)return; memcpy(t.scooterId,d,8); t.scooterId[8]=0; t.lastSidMs=millis(); break; // Scooter-ID broadcast
-    case 0x7B1: case 0x7B9: t.lastDiagMs=millis(); break;                                      // diagnostic tool presence
-    case 0x120: if(m.data_length_code<3)return; t.parkAssistA=d[2]; t.lastParkAMs=millis(); break;  // probable Parking Assist trigger A
-    case 0x121: if(m.data_length_code<3)return; t.parkAssistB=d[2]; t.lastParkBMs=millis(); break;  // probable Parking Assist trigger B
+    case 0x206: if(m.data_length_code<8)return; { float f; memcpy(&f,&d[4],4); t.chgSocLimit=f; } break;  
+    case 0x91: if(m.data_length_code<8)return; memcpy(t.vin,d,8); t.lastVinMs=millis(); break;  
+    case 0x92: if(m.data_length_code<8)return; memcpy(t.vin+8,d,8); t.vin[16]=0; t.lastVinMs=millis(); break;  
+    case 0x93: if(m.data_length_code<1)return; t.vin[16]=(char)d[0]; t.vin[17]=0; t.lastVinMs=millis(); break;  
+    case 0x7A: if(m.data_length_code<8)return; memcpy(t.scooterId,d,8); t.scooterId[8]=0; t.lastSidMs=millis(); break; 
+    case 0x7B1: case 0x7B9: t.lastDiagMs=millis(); break;                                      
+    case 0x120: if(m.data_length_code<3)return; t.parkAssistA=d[2]; t.lastParkAMs=millis(); break;  
+    case 0x121: if(m.data_length_code<3)return; t.parkAssistB=d[2]; t.lastParkBMs=millis(); break;  
     case 0x18c:
       if(m.data_length_code<5)return;
       t.motorI=((d[2]>>5)|((d[3]&31)<<3))+((((d[3]>>5)|((d[4]&31)<<3))&1)*256)-(((d[3]>>5)&1)*512);
