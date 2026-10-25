@@ -148,8 +148,17 @@ To run **VCD Tool** on it:
 ---
 
 ## 3. Flashing the firmware
+Two way to flash
+### 3.1 With ESP Flasher
+1. Connect your ESP module to your PC/Laptop via USB.
+2. Open the **ESP Flasher** application.
+3. Select the correct COM/Serial port your ESP32 is connected to.
+4. Select the proper `.bin` file provided in this folder for you selected hardware and click **Flash**.
+5. Wait a minute for the process to complete, then disconnect and reconnect the ESP32 to restart it.
+6. On your phone, look for a Wi-Fi network named **`VCD-Tool`**. If it appears, flashing worked ✅.
 
-### 3.1 Install the tools
+
+### 3.2.1 With Arduino IDE
 
 1. Install the **[Arduino IDE 2.x](https://www.arduino.cc/en/software)**.
 2. Open **File → Preferences** and add this URL to *Additional boards manager URLs*:
@@ -161,7 +170,7 @@ To run **VCD Tool** on it:
 
 No extra libraries are needed. `WiFi`, `WebServer` and the CAN driver (`driver/twai.h`) ship with the ESP32 core.
 
-### 3.2 Open and configure the sketch
+### 3.2.2 Open and configure the sketch
 
 1. Download or clone this repository.
 2. Open `firmware/VCD_Tool/VCD_Tool.ino` in the Arduino IDE.
@@ -174,7 +183,7 @@ No extra libraries are needed. `WiFi`, `WebServer` and the CAN driver (`driver/t
    | Upload Speed | 921600 (use 115200 if uploads fail) |
    | Port | The `COM X` / `/dev/tty` port of your board |
 
-### 3.3 Upload
+### 3.2.3 Upload
 
 1. Connect the ESP32-C3 to your computer with a USB-C **data** cable (not charge-only).
 2. Click **Upload** (→). Wait for *"Hard resetting via RTS pin…"*.
@@ -182,12 +191,6 @@ No extra libraries are needed. `WiFi`, `WebServer` and the CAN driver (`driver/t
 4. Unplug and re-plug the board.
 5. On your phone, look for a Wi-Fi network named **`VCD-Tool`**. If it appears, flashing worked ✅.
 
-### 3.4 With ESP Flasher
-1. Connect your ESP module to your PC/Laptop via USB.
-2. Open the **ESP Flasher** application.
-3. Select the correct COM/Serial port your ESP32 is connected to.
-4. Select the proper `.bin` file provided in this folder for you selected hardware and click **Flash**.
-5. Wait a minute for the process to complete, then disconnect and reconnect the ESP32 to restart it.
 
 ---
 

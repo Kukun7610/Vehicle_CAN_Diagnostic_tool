@@ -16,7 +16,6 @@ A plain-language guide to every screen, label and abbreviation in the VCD Tool d
 - [7. Thermals](#7--thermals)
 - [8. About](#8--about)
 
-> 🖼️ Each section has an image placeholder. Drop your screenshot into `docs/images/` using the file name shown.
 
 ---
 

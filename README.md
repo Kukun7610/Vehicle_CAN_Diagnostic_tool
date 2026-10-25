@@ -63,9 +63,10 @@ Other highlights:
 ## 🚀 Quick Start
 
 1. **Get the hardware** (DIY build or pre-built) → [Hardware & Setup guide](docs/HARDWARE_AND_SETUP.md)
-2. **Flash the firmware** → [Flashing steps](docs/HARDWARE_AND_SETUP.md#3-flashing-the-firmware)
-3. **Connect to the vehicle** → [Connecting to the vehicle](docs/HARDWARE_AND_SETUP.md#4-connecting-to-the-vehicle)
-4. **Open the dashboard**
+2. **Download firmware**  → [Latest releases](https://github.com/Kukun7610/Vehicle_CAN_Diagnostic_tool/releases)
+3. **Flash the firmware** → [Flashing steps](docs/HARDWARE_AND_SETUP.md#3-flashing-the-firmware)
+4. **Connect to the vehicle** → [Connecting to the vehicle](docs/HARDWARE_AND_SETUP.md#4-connecting-to-the-vehicle)
+5. **Open the dashboard**
 
 | Setting | Value |
 |---|---|
