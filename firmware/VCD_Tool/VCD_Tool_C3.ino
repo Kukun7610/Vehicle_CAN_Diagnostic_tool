@@ -249,7 +249,7 @@ const char htmlPage[] PROGMEM =
 "  }\n"
 "  @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }\n"
 ".about-placeholder-link{color:inherit;text-decoration:underline;opacity:.75;cursor:default}\n"
-".cell-table-wrap{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}\n.cell-table{width:100%;min-width:0;table-layout:fixed;border-collapse:collapse}\n.cell-table th,.cell-table td{padding:7px 4px;overflow-wrap:anywhere;word-break:break-word;font-size:clamp(10px,2.5vw,13px)}\n.cell-table th:first-child,.cell-table td:first-child{width:24%}\n.cell-table th:not(:first-child),.cell-table td:not(:first-child){width:25.33%}\n</style>\n"
+".cell-table-wrap{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}\n.cell-table{width:100%;min-width:0;table-layout:fixed;border-collapse:collapse}\n.cell-table th,.cell-table td{padding:7px 4px;overflow-wrap:anywhere;word-break:break-word;font-size:clamp(10px,2.5vw,13px)}\n.cell-table th:first-child,.cell-table td:first-child{width:24%}\n.cell-table th:not(:first-child),.cell-table td:not(:first-child){width:25.33%}\n@media (prefers-color-scheme: dark) {\n    :root {\n      color-scheme: dark;\n      --ink: #edf1f7; --muted: #aab4c3; --line: #3a4352;\n      --page: #141922; --card: #202734;\n    }\n    body { background:var(--page); color:var(--ink); }\n    .tile:hover:not(:disabled), .tile:focus-visible:not(:disabled) { background:#252e3c; outline-color:#536b9e; }\n    .demo-controls, .control, .data-connection, .cell-table-wrap, .about-link-row { background:#202734; color:var(--ink); }\n    .detail-head { background:#202734; color:var(--ink); border-bottom:1px solid var(--line); }\n    .metric, .telemetry-item { background:#202734; border-color:#3a4352; box-shadow:none; }\n    .telemetry-item { background:linear-gradient(145deg,#222b39,#1c232f); }\n    .telemetry-label { color:#b7c1d0; }\n    .telemetry-value { color:#f1f4f9; }\n    .telemetry-unit { color:#aab4c3; }\n    .field-tag { background:#303a4a; color:#c4cedc; }\n    .field-tag.estimated { background:#493b1d; color:#f2cf75; }\n    .field-tag.hypothesis { background:#3b2b50; color:#d7b7ff; }\n    .field-tag.rarely-seen { background:#263c5d; color:#b8d2ff; }\n    .cell-table th { background:#2b3545; color:#d5deeb; }\n    .cell-table td { border-top-color:#394252; }\n    .cell-table tbody tr:nth-child(even) { background:#1b222d; }\n    .cell-name { color:#9dbaff; }\n    .group-title .group-symbol, .about-link-icon { background:#303a4a; color:#dce5f3; }\n    .about-hero { background:linear-gradient(135deg,#27334b,#252c3b 55%,#1d3934); }\n    .about-link-placeholder { background:#303846; color:#c1cad7; }\n    .empty-state { background:#20273480; border-color:#465165; }\n    .detail-body > .prototype-note { background:#382f1d; color:#e8d29b; }\n    .scooter-placeholder { background:linear-gradient(145deg,rgba(160,180,205,.12),rgba(160,180,205,.04)); }\n  }\n</style>\n"
 "</head>\n"
 "<body>\n"
 "<header class=\"topbar\">\n"
@@ -326,7 +326,7 @@ const char htmlPage[] PROGMEM =
 "  ],"
 "  cells: [\n"
 "    {title:'Pack & cell summary', symbol:'🔋', accent:'#23945d', fields:[\n"
-"      ['Pack state of charge','🔋','—','%'],['Minimum-voltage estimate','📉','—','V','estimated'],['Cell voltage imbalance','⚖️','—','mV','estimated'],['Cell temperature Probe 1','🌡️','—','°C'],['Cell temperature Probe 2','🌡️','—','°C'],['Cell temperature Probe 3','🌡️','—','°C'],['Cell temperature Probe 4','🌡️','—','°C'],['Cell temperature Probe 5','🌡️','—','°C','rarely-seen'],['Delta SoC','↔️','—','%']"
+"      ['Pack state of charge','🔋','—','%'],['Minimum-voltage estimate','📉','—','V','estimated'],['Cell voltage imbalance','⚖️','—','mV','estimated'],['Delta SoC','↔️','—','%'],['Cell temperature Probe 1','🌡️','—','°C'],['Cell temperature Probe 2','🌡️','—','°C'],['Cell temperature Probe 3','🌡️','—','°C'],['Cell temperature Probe 4','🌡️','—','°C'],['Cell temperature Probe 5','🌡️','—','°C','rarely-seen']"
 "    ]}\n"
 "  ],\n"
 "  bms: ["
@@ -414,7 +414,7 @@ const char htmlPage[] PROGMEM =
 "    if (cat.id === 'cells' && group.title === 'Pack & cell summary') {\n"
 "      const tableSection = document.createElement('section');\n"
 "      tableSection.className = 'telemetry-group';\n"
-"      tableSection.innerHTML = `<h3 class=\"group-title\"><span class=\"group-symbol\" style=\"background:#23945d18\">🧪</span>Individual cell details From FC1–C14</h3>\n"
+"      tableSection.innerHTML = `<h3 class=\"group-title\"><span class=\"group-symbol\" style=\"background:#23945d18\">🧪</span>Individual cell details From C1–C14</h3>\n"
 "        <div class=\"cell-table-wrap\"><table class=\"cell-table\"><thead><tr><th>Cell</th><th>Voltage</th><th>SoC</th><th>SoH</th></tr></thead>\n"
 "        <tbody>${Array.from({length:14},(_,i)=>`<tr><td class=\"cell-name\">Cell ${i+1}</td><td>— V</td><td>— %</td><td>— %</td></tr>`).join('')}</tbody></table></div>`;\n"
 "      root.appendChild(section);\n"
@@ -769,7 +769,6 @@ void handleExtra(){
     (unsigned long)t.odometer,(unsigned long)(t.bmsUptimeMs/1000ULL),t.bmsHwVer,
     t.bmsFw[0],t.bmsFw[1],t.bmsFw[2],t.bcmFw[0],t.bcmFw[1],t.bcmFw[2],
     t.gtwFw[0],t.gtwFw[1],t.gtwFw[2],t.motorFw[0],t.motorFw[1],t.motorFw[2],bin);
- 
   { int32_t f=(int32_t)(t.chgSocLimit*100.0f);
     EXTRA_APPEND("\"pdu\":%u,\"chglim\":%d,\"ctemp\":%d,\"mcutemp\":%d,\"tho\":%d,\"th1\":%d,\"th3\":%d,\"tcrpm\":%d,\"mcrpm\":%d,\"diagage\":%ld,",
       t.pduVoltage,f,t.controllerTemp,t.motorMcuTemp,t.throttleOut,t.throttle1,t.throttle3,
@@ -807,7 +806,7 @@ void IRAM_ATTR applyFrame(Telemetry &t, const twai_message_t &m){
     case 0x13D: if(m.data_length_code<6)return; t.deltaSoc=d[4]+(d[5]<<8); break;
     case 0x141: if(m.data_length_code<8)return; t.voltage=d[0]+(d[1]<<8); t.imbalance=d[2]+(d[3]<<8); break;
     case 0x200: if(m.data_length_code<8)return; t.rangeKm=d[6]; t.displayFan=((d[7]>>4)&1); break;
-    case 0x510: if(m.data_length_code<4)return; { int16_t raw=(int16_t)(d[2]+(d[3]<<8)); t.rpm=raw*5/6; t.tcRpm=t.rpm; } break;  
+    case 0x510: if(m.data_length_code<4)return; { int16_t raw=(int16_t)(d[2]+(d[3]<<8)); t.rpm=raw*5/6; t.tcRpm=t.rpm; } break; 
     case 0x601: if(m.data_length_code<4)return; t.mcRpm=(int32_t)(d[0]|(d[1]<<8)|(d[2]<<16)|((uint32_t)d[3]<<24)); break;  
     case 0x101: if(m.data_length_code<5)return; t.driveMode=d[1]; t.smartEco=((d[3]>>6)&1); t.forcedEco=((d[4]>>2)&1); t.navJoystick=d[1]&0x07; break;  
     case 0x102:
@@ -841,7 +840,6 @@ void IRAM_ATTR applyFrame(Telemetry &t, const twai_message_t &m){
       if(m.data_length_code<4)return;
       t.chargerIV=d[0]|(d[1]<<8)|(d[2]<<16)|((uint32_t)d[3]<<24);
       break;
-    
     case 0x130: if(m.data_length_code<5)return; t.bmsUptimeMs=(uint64_t)d[0]|((uint64_t)d[1]<<8)|((uint64_t)d[2]<<16)|((uint64_t)d[3]<<24)|((uint64_t)d[4]<<32); break;
     case 0x136: if(m.data_length_code<8)return; for(int i=0;i<4;i++) t.cellTemp[i]=(int16_t)(d[i*2]+(d[i*2+1]<<8)); break;
     case 0x137: if(m.data_length_code<8)return; t.cellTemp[4]=(int16_t)(d[0]+(d[1]<<8)); t.eftTemp=(int16_t)(d[2]+(d[3]<<8)); t.eciTemp=(int16_t)(d[4]+(d[5]<<8)); t.senseTemp=(int16_t)(d[6]+(d[7]<<8)); break;
@@ -873,21 +871,21 @@ void IRAM_ATTR applyFrame(Telemetry &t, const twai_message_t &m){
       t.throttle3=((d[5]>>4)|((d[6]&15)<<4))-(((d[6]>>3)&1)*256);
       t.throttle1=((d[6]>>4)|((d[7]&15)<<4))-(((d[7]>>3)&1)*256);
       break;
-    case 0x206: if(m.data_length_code<8)return; { float f; memcpy(&f,&d[4],4); t.chgSocLimit=f; } break;  // confirmed: charge SoC limit
-    case 0x91: if(m.data_length_code<8)return; memcpy(t.vin,d,8); t.lastVinMs=millis(); break;  // VIN broadcast part 1
-    case 0x92: if(m.data_length_code<8)return; memcpy(t.vin+8,d,8); t.vin[16]=0; t.lastVinMs=millis(); break;  // VIN broadcast part 2
-    case 0x93: if(m.data_length_code<1)return; t.vin[16]=(char)d[0]; t.vin[17]=0; t.lastVinMs=millis(); break;  // VIN broadcast part 3
-    case 0x7A: if(m.data_length_code<8)return; memcpy(t.scooterId,d,8); t.scooterId[8]=0; t.lastSidMs=millis(); break; // Scooter-ID broadcast
-    case 0x7B1: case 0x7B9: t.lastDiagMs=millis(); break;                                      // diagnostic tool presence
-    case 0x120: if(m.data_length_code<3)return; t.parkAssistA=d[2]; t.lastParkAMs=millis(); break;  // probable Parking Assist trigger A
-    case 0x121: if(m.data_length_code<3)return; t.parkAssistB=d[2]; t.lastParkBMs=millis(); break;  // probable Parking Assist trigger B
+    case 0x206: if(m.data_length_code<8)return; { float f; memcpy(&f,&d[4],4); t.chgSocLimit=f; } break; 
+    case 0x91: if(m.data_length_code<8)return; memcpy(t.vin,d,8); t.lastVinMs=millis(); break; 
+    case 0x92: if(m.data_length_code<8)return; memcpy(t.vin+8,d,8); t.vin[16]=0; t.lastVinMs=millis(); break; 
+    case 0x93: if(m.data_length_code<1)return; t.vin[16]=(char)d[0]; t.vin[17]=0; t.lastVinMs=millis(); break; 
+    case 0x7A: if(m.data_length_code<8)return; memcpy(t.scooterId,d,8); t.scooterId[8]=0; t.lastSidMs=millis(); break; 
+    case 0x7B1: case 0x7B9: t.lastDiagMs=millis(); break;                                     
+    case 0x120: if(m.data_length_code<3)return; t.parkAssistA=d[2]; t.lastParkAMs=millis(); break;  
+    case 0x121: if(m.data_length_code<3)return; t.parkAssistB=d[2]; t.lastParkBMs=millis(); break;  
     case 0x18c:
       if(m.data_length_code<5)return;
       t.motorI=((d[2]>>5)|((d[3]&31)<<3))+((((d[3]>>5)|((d[4]&31)<<3))&1)*256)-(((d[3]>>5)&1)*512);
-      t.motorTemp=(((d[4]&63)<<2)|(d[3]>>6))-40;                                   // Motor Temp
-      if(m.data_length_code>=6) t.controllerTemp=(((d[5]&63)<<2)|(d[4]>>6))-40;    // Controller Temp (distinct from Motor Temp)
+      t.motorTemp=(((d[4]&63)<<2)|(d[3]>>6))-40;                                   
+      if(m.data_length_code>=6) t.controllerTemp=(((d[5]&63)<<2)|(d[4]>>6))-40;    
       break;
-    case 0x209: if(m.data_length_code<3)return; t.motorMcuTemp=(int16_t)d[2]; break;  // Motor MCU Temp (3rd, independent reading)
+    case 0x209: if(m.data_length_code<3)return; t.motorMcuTemp=(int16_t)d[2]; break; 
   }
 }
 
