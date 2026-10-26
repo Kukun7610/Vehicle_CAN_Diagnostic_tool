@@ -151,7 +151,7 @@ This project would not exist without the original community work on Ather CAN di
 
 Released under the **Apache License 2.0**. See the `LICENSE` file for the full text.
 
-If you reuse code, signal definitions or diagrams from this repository, please credit this project and the original [ATHER-OBD-READER](https://github.com/SAM0-0/ATHER-OBD-READER) by SAM0-0.
+If you use this code, reverse-engineered CAN IDs, or diagrams in your own project, website, video, or research, you **must prominently link back to this repository**: [Vehicle CAN Diagnostic Tool](https://github.com/Kukun7610/Vehicle_CAN_Diagnostic_tool)
 
 
 

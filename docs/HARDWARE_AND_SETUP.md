@@ -55,7 +55,8 @@ There are two ways to get a working VCD Tool. Both use the **same hardware**: an
 > 📌 **TX/RX are crossed by design.** The ESP32's *TX* pin goes to the transceiver's *TX input* (`CTX`) and the ESP32's *RX* pin to the transceiver's *RX output* (`CRX`). Module silk-screens vary (`TXD`/`RXD`, `D`/`R`, `CTX`/`CRX`); match them by function.
 
 ### 1.3 Wiring diagram
-
+ ![Finished wiring](images/wiring-photo.png)
+ 
 ```text
         ┌──────────────────────┐                     ┌────────────────────────┐
         │   ESP32-C3 SuperMini │                     │   SN65HVD230 module    │
@@ -123,12 +124,9 @@ Next: [flash the firmware](#3-flashing-the-firmware), then [connect to the vehic
 
 ## Option 2: Get a pre-built device
 
-Don't want to wire anything? A fully assembled plug-and-play Ather OBD reader is sold by the author of the original **ATHER-OBD-READER** project.
+Don't want to wire anything? A fully assembled plug-and-play Ather OBD reader is sold by the author of the [ATHER-OBD-READER}(https://github.com/SAM0-0/ATHER-OBD-READER) project.
 
-| | |
-|---|---|
-| 🛒 **Buy a plug-and-play device** | **[a-obd.in](https://a-obd.in/)** |
-| 📦 **Original project & hardware guide** | [github.com/SAM0-0/ATHER-OBD-READER](https://github.com/SAM0-0/ATHER-OBD-READER) |
+> Please note that while this project utilizes the same hardware configuration as the ATHER-OBD-READER project, the firmware is entirely different. Because the software architecture has been completely redesigned, we cannot assume responsibility or liablity for any issues arising from the prebuilt hardware.
 
 
 ### Using a pre-built device with the VCD Tool firmware
