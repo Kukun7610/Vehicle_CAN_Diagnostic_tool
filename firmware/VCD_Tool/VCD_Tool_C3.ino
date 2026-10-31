@@ -777,7 +777,7 @@ const char htmlPage[] PROGMEM =
 "  cellSohMin:cellSoh.length?Math.min(...cellSoh):null,cellSohMax:cellSoh.length?Math.max(...cellSoh):null,\n"
 "  cellSocMin:cellSoc.length?Math.min(...cellSoc)/100:null,cellSocMax:cellSoc.length?Math.max(...cellSoc)/100:null,\n"
 "  cellTempMin:temps.length?minTemp/100:null,cellTempMax:temps.length?maxTemp/100:null,cellTempDelta:temps.length?(maxTemp-minTemp)/100:null,\n"
-"  cellTemps:temps.map(n=>n/100),afeDieTemp:diagNum(x.die)===null?null:Number(x.die)/100,bmsAmbient:diagNum(x.amb)===null?null:Number(x.amb)/100,humidity:diagNum(x.h)===null?null:Number(x.h)/100,boardTempRefV:diagNum(x.btr)===null?null:Number(x.btr)/1000,vref2:diagNum(x.vr2)===null?null:Number(x.vr2)/10000,vref3:diagNum(x.vr3)===null?null:Number(x.vr3)/10000,mosfetPowerVoltage:diagNum(x.mos)===null?null:Number(x.mos)/1000,afeRegulator:diagNum(x.vreg)===null?null:Number(x.vreg)/1000,pduVoltage:diagNum(x.pdu)===null?null:Number(x.pdu)/1000,\n"
+"  cellTemps:temps.map(n=>n/100),afeDieTemp:diagNum(x.die)===null?null:Number(x.die)/100,bmsAmbient:diagNum(x.amb)===null?null:Number(x.amb)/100,humidity:diagNum(x.hum)===null?null:Number(x.hum)/100,boardTempRefV:diagNum(x.btr)===null?null:Number(x.btr)/1000,vref2:diagNum(x.vr2)===null?null:Number(x.vr2)/10000,vref3:diagNum(x.vr3)===null?null:Number(x.vr3)/10000,mosfetPowerVoltage:diagNum(x.mos)===null?null:Number(x.mos)/1000,afeRegulator:diagNum(x.vreg)===null?null:Number(x.vreg)/1000,pduVoltage:diagNum(x.pdu)===null?null:Number(x.pdu)/1000,\n"
 "  deratedDischarge:diagNum(x.dd)===null?null:Number(x.dd)/100,deratedCharge:diagNum(x.dc)===null?null:Number(x.dc)/100,deratedRegen:diagNum(x.dr)===null?null:Number(x.dr)/100,dischargeLimitTemp:diagNum(x.dl)===null?null:Number(x.dl)/100,\n"
 "  motorCurrent:ch.mbi,motorTemp:ch.mt,controllerTemp:x.ctemp,motorMcuTemp:x.mcutemp,throttleOut:x.tho,throttle1:x.th1,throttle3:x.th3,mcRpm:x.mcrpm,tcRpm:x.tcrpm,\n"
 "  chargerConnected:ch.cconnected,chargerInputVoltage:ch.cinv,chargerOutputVoltage:ch.coutv,chargerOutputCurrent:ch.couti,chargerPower:ch.watts,chargerFan1:ch.fan1,chargerFan2:ch.fan2,chargerLock1:ch.clock1,chargerLock2:ch.clock2,seatLock:ch.seat,chargeSocLimit:diagNum(x.chglim)===null?null:Number(x.chglim)/100,chargeCellRule:diagNum(x.cr)===null?null:Number(x.cr)/100,chargeCommandRateLimit:diagNum(x.crl)===null?null:Number(x.crl)/100,chargePostQuant:diagNum(x.cpq)===null?null:Number(x.cpq)/100,\n"
@@ -1259,7 +1259,7 @@ void IRAM_ATTR applyFrame(Telemetry &t, const twai_message_t &m){
     case 0x7A: if(m.data_length_code<8)return; memcpy(t.scooterId,d,8); t.scooterId[8]=0; t.lastSidMs=millis(); break; // Scooter-ID broadcast
     case 0x7B1: case 0x7B9: t.lastDiagMs=millis(); break;                                      // diagnostic tool presence
     case 0x120: if(m.data_length_code<3)return; t.parkAssistA=d[2]; t.lastParkAMs=millis(); break;  // probable Parking Assist trigger A
-    case 0x121: if(m.data_length_code<3)return; t.parkAssistB=d[2]; t.lastParkBMs=millis(); break;  
+    case 0x121: if(m.data_length_code<3)return; t.parkAssistB=d[2]; t.lastParkBMs=millis(); break;  // probable Parking Assist trigger B
     case 0x18c:
       if(m.data_length_code<5)return;
       t.motorI=((d[2]>>5)|((d[3]&31)<<3))+((((d[3]>>5)|((d[4]&31)<<3))&1)*256)-(((d[3]>>5)&1)*512);
