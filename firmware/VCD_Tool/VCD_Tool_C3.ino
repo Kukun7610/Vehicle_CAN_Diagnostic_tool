@@ -33,6 +33,7 @@ struct Telemetry {
   bool     forcedEco, smartEco;
   bool     seatLock, chargerLock1, chargerLock2;
   bool     chargerConnected;
+  // ===== EXTRA (newly discovered) fields =====
   int16_t  cellTemp[5];
   int16_t  afeDieTemp, packCurrent;
   int16_t  humidity, bmsAmbient;
@@ -50,20 +51,25 @@ struct Telemetry {
   uint64_t bmsUptimeMs;
   uint8_t  bmsHwVer, bmsFw[3], bcmFw[3], gtwFw[3], motorFw[3];
   char     binId[16];
-  uint16_t pduVoltage;              
-  float    chgSocLimit;             
-  int16_t  controllerTemp;          
-  int16_t  motorMcuTemp;            
-  int16_t  throttleOut, throttle1, throttle3;  
-  int32_t  tcRpm;                   
-  int32_t  mcRpm;                   
-  char     vin[20];                 
-  char     scooterId[10];           
-  unsigned long lastDiagMs;         
-  uint8_t  navJoystick;             
-  uint8_t  parkAssistA, parkAssistB;             
+  // ===== v4.9 additions =====
+  uint16_t pduVoltage;              // 0x102 D6-D7, confirmed ~12.0-12.1 V
+  float    chgSocLimit;             // 0x206 D4-D7, float32 - confirmed by real charging test
+  int16_t  controllerTemp;          // 0x18C D4-D5, bit-packed - 2nd of 3 distinct temperatures
+  int16_t  motorMcuTemp;            // 0x209 D2 - 3rd, independent temperature reading
+  int16_t  throttleOut, throttle1, throttle3;  // 0x38C, bit-packed
+  int32_t  tcRpm;                   // 0x510 - original sketch's RPM frame (working hypothesis: Traction Control RPM)
+  int32_t  mcRpm;                   // 0x601 - probable real motor/wheel-speed RPM (seen only during a real ride)
+  char     vin[20];                 // 0x91+0x92+0x93 ASCII (second-scooter / service-session only)
+  char     scooterId[10];           // 0x7A ASCII (second-scooter / service-session only)
+  unsigned long lastDiagMs;         // last time a 0x7B1/0x7B9 diagnostic frame was seen
+  // ===== fields missing from this build, added back in =====
+  uint8_t  navJoystick;             // 0x101 D1 bits 0-2, raw code (which code = which direction unconfirmed)
+  uint8_t  parkAssistA, parkAssistB;             // 0x120 / 0x121, one-shot triggers (probable Parking Assist)
   unsigned long lastParkAMs, lastParkBMs;
-  unsigned long lastVinMs, lastSidMs, lastGtwMs;  
+  unsigned long lastVinMs, lastSidMs, lastGtwMs;  // freshness: these only update when their rare
+                                                   // broadcast frame is actually on the bus - nothing in
+                                                   // listen-only code can make that happen sooner, so this
+                                                   // just shows how old the value is instead of a silent "--"
 };
 
 Telemetry snap;
@@ -96,7 +102,7 @@ const char htmlPage[] PROGMEM =
 "<style>\n"
 "  :root {\n"
 "    --blue: #2f52ad; --blue-dark: #244493; --green: #18c96b;\n"
-"    --amber: #e7a526; --red: #dc3545; --ink: #20242b;\n"
+"    --amber: #e7a526; --red: #dc3545; --ink: #20242b; --border:#dce2ec;\n"
 "    --muted: #737b88; --line: #dce2ec; --page: #f4f6fa; --card: #fff;\n"
 "  }\n"
 "  * { box-sizing: border-box; }\n"
@@ -143,7 +149,7 @@ const char htmlPage[] PROGMEM =
 "  .vehicle { background:#e1eaff; color:#2355b6; } .cells { background:#ddf7e8; color:#167746; }\n"
 "  .bms { background:#f0e3ff; color:#7944a7; } .motor { background:#ffeadb; color:#b94c14; }\n"
 "  .charger { background:#fff2c9; color:#966a00; } .firmware { background:#dff1ff; color:#17628f; }\n"
-"  .thermals { background:#ffe0e7; color:#b42b4c; } .others { background:#e8eaee; color:#4a5565; }\n"
+"  .thermals { background:#ffe0e7; color:#b42b4c; } .diagnostic { background:#dff1ff; color:#17628f; } .others { background:#e8eaee; color:#4a5565; }\n"
 "  .info { margin:18px 0 0; color:var(--muted); font-size:13px; line-height:1.5; display:flex; justify-content:space-between; gap:14px; flex-wrap:wrap; }\n"
 "  .demo-controls { display:none; background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px; margin:18px 0 0; }\n"
 "  .demo-controls h2 { font-size:14px; margin:0 0 10px; }\n"
@@ -249,7 +255,38 @@ const char htmlPage[] PROGMEM =
 "  }\n"
 "  @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }\n"
 ".about-placeholder-link{color:inherit;text-decoration:underline;opacity:.75;cursor:default}\n"
-".cell-table-wrap{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}\n.cell-table{width:100%;min-width:0;table-layout:fixed;border-collapse:collapse}\n.cell-table th,.cell-table td{padding:7px 4px;overflow-wrap:anywhere;word-break:break-word;font-size:clamp(10px,2.5vw,13px)}\n.cell-table th:first-child,.cell-table td:first-child{width:24%}\n.cell-table th:not(:first-child),.cell-table td:not(:first-child){width:25.33%}\n@media (prefers-color-scheme: dark) {\n    :root {\n      color-scheme: dark;\n      --ink: #edf1f7; --muted: #aab4c3; --line: #3a4352;\n      --page: #141922; --card: #202734;\n    }\n    body { background:var(--page); color:var(--ink); }\n    .tile:hover:not(:disabled), .tile:focus-visible:not(:disabled) { background:#252e3c; outline-color:#536b9e; }\n    .demo-controls, .control, .data-connection, .cell-table-wrap, .about-link-row { background:#202734; color:var(--ink); }\n    .detail-head { background:#202734; color:var(--ink); border-bottom:1px solid var(--line); }\n    .metric, .telemetry-item { background:#202734; border-color:#3a4352; box-shadow:none; }\n    .telemetry-item { background:linear-gradient(145deg,#222b39,#1c232f); }\n    .telemetry-label { color:#b7c1d0; }\n    .telemetry-value { color:#f1f4f9; }\n    .telemetry-unit { color:#aab4c3; }\n    .field-tag { background:#303a4a; color:#c4cedc; }\n    .field-tag.estimated { background:#493b1d; color:#f2cf75; }\n    .field-tag.hypothesis { background:#3b2b50; color:#d7b7ff; }\n    .field-tag.rarely-seen { background:#263c5d; color:#b8d2ff; }\n    .cell-table th { background:#2b3545; color:#d5deeb; }\n    .cell-table td { border-top-color:#394252; }\n    .cell-table tbody tr:nth-child(even) { background:#1b222d; }\n    .cell-name { color:#9dbaff; }\n    .group-title .group-symbol, .about-link-icon { background:#303a4a; color:#dce5f3; }\n    .about-hero { background:linear-gradient(135deg,#27334b,#252c3b 55%,#1d3934); }\n    .about-link-placeholder { background:#303846; color:#c1cad7; }\n    .empty-state { background:#20273480; border-color:#465165; }\n    .detail-body > .prototype-note { background:#382f1d; color:#e8d29b; }\n    .scooter-placeholder { background:linear-gradient(145deg,rgba(160,180,205,.12),rgba(160,180,205,.04)); }\n  }\n</style>\n"
+".cell-table-wrap{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}\n.cell-table{width:100%;min-width:0;table-layout:fixed;border-collapse:collapse}\n.cell-table th,.cell-table td{padding:7px 4px;overflow-wrap:anywhere;word-break:break-word;font-size:clamp(10px,2.5vw,13px)}\n.cell-table th:first-child,.cell-table td:first-child{width:24%}\n.cell-table th:not(:first-child),.cell-table td:not(:first-child){width:25.33%}\n@media (prefers-color-scheme: dark) {\n    :root {\n      color-scheme: dark;\n      --ink: #edf1f7; --muted: #aab4c3; --line: #3a4352;\n      --page: #141922; --card: #202734;\n    }\n    body { background:var(--page); color:var(--ink); }\n    .tile:hover:not(:disabled), .tile:focus-visible:not(:disabled) { background:#252e3c; outline-color:#536b9e; }\n    .demo-controls, .control, .data-connection, .cell-table-wrap, .about-link-row { background:#202734; color:var(--ink); }\n    .detail-head { background:#202734; color:var(--ink); border-bottom:1px solid var(--line); }\n    .metric, .telemetry-item { background:#202734; border-color:#3a4352; box-shadow:none; }\n    .telemetry-item { background:linear-gradient(145deg,#222b39,#1c232f); }\n    .telemetry-label { color:#b7c1d0; }\n    .telemetry-value { color:#f1f4f9; }\n    .telemetry-unit { color:#aab4c3; }\n    .field-tag { background:#303a4a; color:#c4cedc; }\n    .field-tag.estimated { background:#493b1d; color:#f2cf75; }\n    .field-tag.hypothesis { background:#3b2b50; color:#d7b7ff; }\n    .field-tag.rarely-seen { background:#263c5d; color:#b8d2ff; }\n    .cell-table th { background:#2b3545; color:#d5deeb; }\n    .cell-table td { border-top-color:#394252; }\n    .cell-table tbody tr:nth-child(even) { background:#1b222d; }\n    .cell-name { color:#9dbaff; }\n    .group-title .group-symbol, .about-link-icon { background:#303a4a; color:#dce5f3; }\n    .about-hero { background:linear-gradient(135deg,#27334b,#252c3b 55%,#1d3934); }\n    .about-link-placeholder { background:#303846; color:#c1cad7; }\n    .empty-state { background:#20273480; border-color:#465165; }\n    .detail-body > .prototype-note { background:#382f1d; color:#e8d29b; }\n    .scooter-placeholder { background:linear-gradient(145deg,rgba(160,180,205,.12),rgba(160,180,205,.04)); }\n  }\n"
+"  .diagnostic-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 18px}\n"
+"  .diagnostic-tab{border:1px solid var(--border);background:var(--card);color:var(--ink);border-radius:12px;padding:10px 12px;font-weight:650;cursor:pointer}\n"
+"  .diagnostic-tab.active{background:var(--blue);border-color:var(--blue);color:#fff}\n"
+"  .diag-panel{border:1px solid var(--border);border-radius:16px;padding:clamp(16px,2.5vw,24px);margin:0 0 20px;background:var(--card);box-shadow:0 3px 14px rgba(30,45,70,.045)}\n"
+"  .diag-panel h3{margin:0 0 8px;font-size:17px}\n"
+"  .diag-muted{color:var(--muted);font-size:13px;line-height:1.5}\n"
+"  .diag-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:14px;margin-top:16px}\n"
+"  .diag-metric{border:1px solid var(--border);border-radius:12px;padding:11px;min-width:0}\n"
+"  .diag-metric span{display:block;color:var(--muted);font-size:12px;margin-bottom:5px}\n"
+"  .diag-metric strong{font-size:17px;overflow-wrap:anywhere}\n"
+"  .diag-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}\n"
+"  .diag-actions button{border:0;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer;background:var(--blue);color:white}\n"
+"  .diag-actions button.secondary{background:var(--blue-dark)}\n"
+"  .diag-actions button.danger{background:var(--red)}\n"
+"  .diag-actions button:disabled{opacity:.45;cursor:not-allowed}\n"
+"  .diag-profile{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}\n"
+"  .diag-profile label{border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;gap:10px;align-items:flex-start;cursor:pointer;min-width:0;line-height:1.45;transition:border-color .18s,box-shadow .18s,transform .18s}\n"
+"  .diag-profile label:has(input:checked){border-color:var(--blue);box-shadow:0 0 0 2px color-mix(in srgb,var(--blue) 16%,transparent);background:color-mix(in srgb,var(--blue) 5%,var(--card))}\n"
+"  .diag-profile input{margin-top:4px;accent-color:var(--blue);flex:0 0 auto}\n"
+"  .diag-clock{display:flex;align-items:center;gap:20px;margin-top:20px;padding:16px;border-radius:16px;background:color-mix(in srgb,var(--blue) 5%,var(--card));border:1px solid var(--border)}\n"
+"  .diag-clock-face{width:92px;height:92px;flex:0 0 92px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--green) var(--progress,0%),var(--border) 0);position:relative}\n"
+"  .diag-clock-face:before{content:\"\";position:absolute;inset:7px;border-radius:50%;background:var(--card)}\n"
+"  .diag-clock-face strong{position:relative;font-size:15px;font-variant-numeric:tabular-nums}\n"
+"  .diag-clock-face.running{animation:diagRingPulse 2s ease-in-out infinite}\n"
+"  .diag-clock-face.running strong{animation:diagPulse 1.3s ease-in-out infinite}\n"
+"  @keyframes diagRingPulse{0%,100%{filter:drop-shadow(0 0 0 rgba(24,201,107,0))}50%{filter:drop-shadow(0 0 8px rgba(24,201,107,.28))}}\n"
+"  .diag-list{margin:8px 0 0;padding-left:20px;line-height:1.55}\n"
+"  @keyframes diagPulse{50%{opacity:.55;transform:scale(.96)}}\n"
+"  @media(max-width:680px){.diag-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.diag-profile{grid-template-columns:1fr}.diag-clock{align-items:center;gap:14px;padding:12px}.diag-clock-face{width:78px;height:78px;flex-basis:78px}.diag-actions button{flex:1 1 42%}}\n"
+"  @media(max-width:390px){.diag-grid{grid-template-columns:1fr}.diag-clock{align-items:flex-start;flex-direction:column}}\n"
+"</style>\n"
 "</head>\n"
 "<body>\n"
 "<header class=\"topbar\">\n"
@@ -306,6 +343,7 @@ const char htmlPage[] PROGMEM =
 "  {id:'charger', label:'Charger', cls:'charger', desc:'Charger voltage, current, calculated power, fans, connection and charge limit.', icon:'<path d=\"M13 2L5 13h6l-1 9 9-12h-6z\"/> '},\n"
 "  {id:'firmware', label:'Firmware & Software', cls:'firmware', desc:'BMS, BCM, gateway and motor firmware versions, diagnostics and scanner health.', icon:'<rect x=\"6\" y=\"6\" width=\"12\" height=\"12\" rx=\"2\"/><path d=\"M9 2v4m6-4v4M9 18v4m6-4v4M2 9h4m-4 6h4m12-6h4m-4 6h4M10 10h4v4h-4z\"/> '},\n"
 "  {id:'thermals', label:'Thermals', cls:'thermals', desc:'Cell, BMS, motor and controller temperatures, humidity and thermal limits.', icon:'<path d=\"M10 14.5V5a2 2 0 0 1 4 0v9.5a5 5 0 1 1-4 0z\"/><path d=\"M12 11v7\"/> '},\n"
+"  {id:'diagnostic', label:'Diagnostic', cls:'diagnostic', desc:'Segment-specific telemetry, recording, analysis and JSON export.', icon:'<path d=\"M14.7 6.3a4 4 0 0 0-5.4 5.4l-5.6 5.6a2 2 0 0 0 2.8 2.8l5.6-5.6a4 4 0 0 0 5.4-5.4l-2.4 2.4-2.8-2.8z\"/> '},\n"
 "  {id:'about', label:'About', cls:'others', desc:'Project information, contributors, repository, suggestions, and ways to contribute.', icon:'<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 11v5\"/><circle cx=\"12\" cy=\"7.5\" r=\".7\" fill=\"currentColor\" stroke=\"none\"/> '}\n"
 "];\n"
 "\n"
@@ -379,6 +417,7 @@ const char htmlPage[] PROGMEM =
 "};\n"
 "\n"
 "function renderTelemetry(cat) {\n"
+"  if (cat.id === 'diagnostic') { renderDiagnostic(); return; }\n"
 "  const root = document.getElementById('telemetryContent');\n"
 "  root.innerHTML = '';\n"
 "  const groups = telemetryGroups[cat.id] || [];\n"
@@ -566,6 +605,8 @@ const char htmlPage[] PROGMEM =
 "  updateStatus(!isFresh?'offline':age>=CAN_DEGRADED_TIMEOUT_MS?'amber':'online');\n"
 "  if(isFresh){\n"
 "   updateLiveMetrics();\n"
+"   if(selected==='diagnostic'){diagRenderMetrics();diagUpdateRecorderUI();}\n"
+
 "   document.getElementById('dataConnection').className='data-connection connected';\n"
 "   document.getElementById('connectionTitle').textContent=age>=CAN_DEGRADED_TIMEOUT_MS?'CAN data intermittent':'CAN data connected';\n"
 "   document.getElementById('connectionMessage').textContent='Last CAN frame '+(age<1000?age+' ms ago':(age/1000).toFixed(1)+' s ago')+'.';\n"
@@ -645,7 +686,7 @@ const char htmlPage[] PROGMEM =
 "      : 'No CAN data is being received. Categories are disabled until data resumes.';\n"
 "  document.getElementById('detailLive').textContent = mode === 'offline' ? 'OFFLINE' : mode === 'amber' ? 'DEGRADED' : 'LIVE';\n"
 "  document.getElementById('detailLive').style.color = mode === 'offline' ? '#ff6572' : mode === 'amber' ? '#f0bd45' : '#18c96b';\n"
-"  if (mode === 'offline' && selected) closeCategory();\n"
+"  if (mode === 'offline' && selected && !(diagSession && !diagSession.finalized)) closeCategory();\n"
 "}\n"
 "function openCategory(id) {\n"
 "  if (mode === 'offline') return;\n"
@@ -674,10 +715,348 @@ const char htmlPage[] PROGMEM =
 "  const isOpen = menu.classList.toggle('open');\n"
 "  document.getElementById('menuToggle').setAttribute('aria-expanded', String(isOpen));\n"
 "});\n"
+"\n"
+"\n"
+"\n"
+"\n"
+"\n"
+"const diagSegments = [\n"
+" {id:'activity',name:'Vehicle & Button Activity',goal:'What the rider/system did, and how often.',profile:'activity'},\n"
+" {id:'battery',name:'Battery Health & BMS',goal:'Pack condition, cell balance, temperature and electrical stress.',profile:'battery'},\n"
+" {id:'motor',name:'Motor & Controller',goal:'Drivetrain load, throttle agreement and thermal behavior.',profile:'motor'},\n"
+" {id:'charger',name:'Charger Performance',goal:'Charge behavior, power delivery and charge-limit response.',profile:'charger'},\n"
+" {id:'ride',name:'RideCheck',goal:'Cross-section of ride telemetry, braking, motion and energy use.',profile:'ride'}\n"
+"];\n"
+"const diagProfiles = [\n"
+" {id:'quick_check',name:'Quick Check',minutes:5,desc:'Short focused capture of core segment signals'},\n"
+" {id:'snapshot',name:'Snapshot',minutes:15,desc:'Core metrics and compact summaries'},\n"
+" {id:'drive_cycle',name:'Drive Cycle',minutes:30,desc:'Core metrics plus operating trends'}\n"
+"];\n"
+"let diagActiveSegment = 'activity';\n"
+"let diagSession = null;\n"
+"let diagSavedSessions = {};\n"
+"let diagTimer = null;\n"
+"let diagLastSampleMs = 0;\n"
+"let diagTransitionState = {};\n"
+"const diagTransitionStats = {};\n"
+"const diagMetricNames = {\n"
+" fbrake:'Front brake',rbrake:'Rear brake',hbeam:'High beam',start:'Start switch',kill:'Kill switch',\n"
+" storage:'Storage switch',horn:'Horn',indl:'Left indicator',indr:'Right indicator',indc:'Center indicator',\n"
+" key:'Key ON',stand:'Side stand',dfan:'Display fan',seat:'Seat lock',feco:'Forced ECO',seco:'Smart ECO'\n"
+"};\n"
+"function diagVal(v){return v===undefined||v===null||v===''?'Unavailable':v;}\n"
+"function diagNum(v){const n=Number(v);return Number.isFinite(n)?n:null;}\n"
+"function diagFmt(v,unit=''){const n=diagNum(v);return n===null?'Unavailable':(Number.isInteger(n)?String(n):n.toFixed(2))+unit;}\n"
+"function diagGet(){\n"
+" const d=liveData.data||{},c=liveData.cells||{},ch=liveData.charger||{},x=liveData.extra||{};\n"
+" return {d,c,ch,x};\n"
+"}\n"
+"function diagMetric(label,value,unit=''){\n"
+" const n=diagNum(value);\n"
+" const display=(value===undefined||value===null||value==='')?'Unavailable':(typeof value==='boolean'?(value?'Active':'Inactive'):(n!==null?diagFmt(n,unit):String(value)));\n"
+" return `<div class=\\\"diag-metric\\\"><span>${label}</span><strong>${display}</strong></div>`;\n"
+"}\n"
+"function diagCurrentValues(id){\n"
+" const {d,c,ch,x}=diagGet();\n"
+" const cells=Array.isArray(c.v)?c.v.map(Number).filter(Number.isFinite):[];\n"
+" const cellSoh=Array.isArray(c.h)?c.h.map(Number).filter(Number.isFinite):[];\n"
+" const cellSoc=Array.isArray(x.cs)?x.cs.map(Number).filter(Number.isFinite):[];\n"
+" const temps=Array.isArray(x.ct)?x.ct.map(Number).filter(Number.isFinite):[];\n"
+" const minCell=cells.length?Math.min(...cells):null, maxCell=cells.length?Math.max(...cells):null;\n"
+" const spread=cells.length?maxCell-minCell:null;\n"
+" const minTemp=temps.length?Math.min(...temps):null,maxTemp=temps.length?Math.max(...temps):null;\n"
+" const values={\n"
+"  fbrake:d.fbrake,rbrake:d.rbrake,hbeam:d.hbeam,start:d.start,kill:d.kill,storage:d.storage,horn:d.horn,\n"
+"  indl:d.indl,indr:d.indr,indc:d.indc,key:d.key,stand:d.stand,dfan:d.dfan,feco:d.feco,seco:d.seco,\n"
+"  mode:d.mode,rpm:d.rpm,odo:diagNum(x.odo)===null?null:Number(x.odo)/1000,bmsUptime:x.up,canAgeMs:d.canAgeMs,diagAgeMs:x.diagage,\n"
+"  vinAgeMs:x.vinage,sidAgeMs:x.sidage,gatewayAgeMs:x.gtwage,vin:x.vin,scooterId:x.sid,navJoystick:x.nav,parkAssistA:x.pka,parkAssistB:x.pkb,firmware:{bms:x.bfw,bcm:x.cfw,gateway:x.gfw,motor:x.mfw},\n"
+"  soc:d.soc,soh:d.soh,deltaSoc:d.bdelta,socEkf:diagNum(x.sekf)===null?null:Number(x.sekf)/100,soe:diagNum(x.soe)===null?null:Number(x.soe)/100,maxSoc:diagNum(x.msoc)===null?null:Number(x.msoc)/100,minSoc:diagNum(x.minsoc)===null?null:Number(x.minsoc)/100,\n"
+"  packVoltage:d.volt,packCurrent:diagNum(x.ci)===null?null:Number(x.ci)/100,imbalance:d.imb,balancing:ch.bal,\n"
+"  cellVoltageMin:minCell,cellVoltageMax:maxCell,cellVoltageSpread:spread,\n"
+"  weakestCellIndex:cells.length?cells.indexOf(minCell)+1:null,strongestCellIndex:cells.length?cells.indexOf(maxCell)+1:null,\n"
+"  cellSohMin:cellSoh.length?Math.min(...cellSoh):null,cellSohMax:cellSoh.length?Math.max(...cellSoh):null,\n"
+"  cellSocMin:cellSoc.length?Math.min(...cellSoc)/100:null,cellSocMax:cellSoc.length?Math.max(...cellSoc)/100:null,\n"
+"  cellTempMin:temps.length?minTemp/100:null,cellTempMax:temps.length?maxTemp/100:null,cellTempDelta:temps.length?(maxTemp-minTemp)/100:null,\n"
+"  cellTemps:temps.map(n=>n/100),afeDieTemp:diagNum(x.die)===null?null:Number(x.die)/100,bmsAmbient:diagNum(x.amb)===null?null:Number(x.amb)/100,humidity:diagNum(x.h)===null?null:Number(x.h)/100,boardTempRefV:diagNum(x.btr)===null?null:Number(x.btr)/1000,vref2:diagNum(x.vr2)===null?null:Number(x.vr2)/10000,vref3:diagNum(x.vr3)===null?null:Number(x.vr3)/10000,mosfetPowerVoltage:diagNum(x.mos)===null?null:Number(x.mos)/1000,afeRegulator:diagNum(x.vreg)===null?null:Number(x.vreg)/1000,pduVoltage:diagNum(x.pdu)===null?null:Number(x.pdu)/1000,\n"
+"  deratedDischarge:diagNum(x.dd)===null?null:Number(x.dd)/100,deratedCharge:diagNum(x.dc)===null?null:Number(x.dc)/100,deratedRegen:diagNum(x.dr)===null?null:Number(x.dr)/100,dischargeLimitTemp:diagNum(x.dl)===null?null:Number(x.dl)/100,\n"
+"  motorCurrent:ch.mbi,motorTemp:ch.mt,controllerTemp:x.ctemp,motorMcuTemp:x.mcutemp,throttleOut:x.tho,throttle1:x.th1,throttle3:x.th3,mcRpm:x.mcrpm,tcRpm:x.tcrpm,\n"
+"  chargerConnected:ch.cconnected,chargerInputVoltage:ch.cinv,chargerOutputVoltage:ch.coutv,chargerOutputCurrent:ch.couti,chargerPower:ch.watts,chargerFan1:ch.fan1,chargerFan2:ch.fan2,chargerLock1:ch.clock1,chargerLock2:ch.clock2,seatLock:ch.seat,chargeSocLimit:diagNum(x.chglim)===null?null:Number(x.chglim)/100,chargeCellRule:diagNum(x.cr)===null?null:Number(x.cr)/100,chargeCommandRateLimit:diagNum(x.crl)===null?null:Number(x.crl)/100,chargePostQuant:diagNum(x.cpq)===null?null:Number(x.cpq)/100,\n"
+"  ax:x.ax,ay:x.ay,az:x.az,roll:x.er,pitch:x.ep,heading:x.eh\n"
+" };\n"
+" const discreteKeys=['fbrake','rbrake','hbeam','start','kill','storage','horn','indl','indr','indc','key','stand','dfan','feco','seco','chargerConnected','chargerLock1','chargerLock2','seatLock'];\n"
+" discreteKeys.forEach(k=>{const raw=values[k];if(typeof raw==='string'){const t=raw.trim().toLowerCase();if(t==='true'||t==='1'||t==='on'||t==='active'||t==='pressed'||t==='connected'||t==='locked')values[k]=true;else if(t==='false'||t==='0'||t==='off'||t==='inactive'||t==='not pressed'||t==='disconnected'||t==='unlocked')values[k]=false;}else if(raw===0||raw===1)values[k]=raw===1;});\n"
+" if(id==='activity') return values;\n"
+" if(id==='battery') return values;\n"
+" if(id==='motor') return values;\n"
+" if(id==='charger') return values;\n"
+" if(id==='ride') return values;\n"
+" return values;\n"
+"}\n"
+"function diagSegmentMetricKeys(id){\n"
+" if(id==='activity') return ['fbrake','rbrake','hbeam','start','kill','storage','horn','indl','indr','indc','key','stand','dfan','feco','seco','mode','rpm','odo','bmsUptime','canAgeMs','diagAgeMs','vinAgeMs','sidAgeMs','navJoystick','parkAssistA','parkAssistB','gatewayAgeMs'];\n"
+" if(id==='battery') return ['soc','socEkf','soe','soh','deltaSoc','maxSoc','packVoltage','packCurrent','cellVoltageMin','cellVoltageMax','cellVoltageSpread','weakestCellIndex','strongestCellIndex','imbalance','balancing','cellSohMin','cellSohMax','cellSocMin','cellSocMax','cellTempMin','cellTempMax','cellTempDelta','afeDieTemp','bmsAmbient','humidity','deratedDischarge','deratedCharge','deratedRegen','dischargeLimitTemp','vref2','vref3','mosfetPowerVoltage','afeRegulator','pduVoltage'];\n"
+" if(id==='motor') return ['rpm','mcRpm','tcRpm','motorCurrent','packCurrent','motorTemp','controllerTemp','motorMcuTemp','throttleOut','throttle1','throttle3','deratedDischarge','deratedRegen','soc','packVoltage','odo'];\n"
+" if(id==='charger') return ['chargerConnected','chargerLock1','chargerLock2','seatLock','chargerInputVoltage','chargerOutputVoltage','chargerOutputCurrent','chargerPower','chargerFan1','chargerFan2','balancing','chargeSocLimit','deratedCharge','chargeCellRule','chargeCommandRateLimit','chargePostQuant','packVoltage','cellVoltageSpread','cellTempMin','cellTempMax','soc'];\n"
+" return ['rpm','throttleOut','throttle1','throttle3','motorCurrent','packCurrent','packVoltage','soc','motorTemp','controllerTemp','motorMcuTemp','cellTempMin','cellTempMax','ax','ay','az','pitch','roll','odo','mode','fbrake','rbrake'];\n"
+"}\n"
+"function diagFieldLabel(k){\n"
+" return ({soc:'SoC (%)',soh:'Reported SoH (%)',socEkf:'EKF SoC',soe:'SoE',deltaSoc:'Delta SoC',maxSoc:'Max SoC',packVoltage:'Pack voltage (V)',packCurrent:'Pack current',cellVoltageMin:'Cell voltage min (V)',cellVoltageMax:'Cell voltage max (V)',cellVoltageSpread:'Cell spread (V)',weakestCellIndex:'Weakest cell #',strongestCellIndex:'Strongest cell #',cellTempMin:'Cell temp min',cellTempMax:'Cell temp max',cellTempDelta:'Cell temp delta',afeDieTemp:'AFE die temp',bmsAmbient:'BMS ambient',humidity:'Humidity',deratedDischarge:'Derated discharge limit',deratedCharge:'Derated charge limit',deratedRegen:'Derated regen limit',dischargeLimitTemp:'Discharge limit temp',vref2:'VREF2',vref3:'VREF3',mosfetPowerVoltage:'MOSFET power voltage',afeRegulator:'AFE regulator',pduVoltage:'PDU voltage',rpm:'RPM',mcRpm:'MC RPM',tcRpm:'TC RPM',motorCurrent:'Motor current',motorTemp:'Motor temp',controllerTemp:'Controller temp',motorMcuTemp:'Motor MCU temp',throttleOut:'Throttle output',throttle1:'Throttle 1',throttle3:'Throttle 3',chargerConnected:'Charger connected',chargerInputVoltage:'Input voltage',chargerOutputVoltage:'Output voltage',chargerOutputCurrent:'Output current',chargerPower:'Charger power',chargerFan1:'Charger fan 1',chargerFan2:'Charger fan 2',chargerLock1:'Charger lock 1',chargerLock2:'Charger lock 2',seatLock:'Seat lock',chargeSocLimit:'Charge SoC limit',chargeCellRule:'Charge cell rule',chargeCommandRateLimit:'Charge command rate limit',chargePostQuant:'Charge post quant',cellVoltageSpread:'Cell voltage spread',ax:'IMU acceleration X',ay:'IMU acceleration Y',az:'IMU acceleration Z',pitch:'Pitch',roll:'Roll',odo:'Odometer',bmsUptime:'BMS uptime',canAgeMs:'CAN age (ms)',diagAgeMs:'Diagnostic age (ms)',vinAgeMs:'VIN age (ms)',sidAgeMs:'Scooter ID age (ms)',navJoystick:'Navigation joystick',parkAssistA:'Park assist A',parkAssistB:'Park assist B',gatewayAgeMs:'Gateway age (ms)',mode:'Drive mode',fbrake:'Front brake',rbrake:'Rear brake',hbeam:'High beam',start:'Start switch',kill:'Kill switch',storage:'Storage switch',horn:'Horn',indl:'Left indicator',indr:'Right indicator',indc:'Center indicator',key:'Key ON',stand:'Side stand',dfan:'Display fan',feco:'Forced ECO',seco:'Smart ECO',imbalance:'Cell imbalance',balancing:'Balancing state',cellSohMin:'Lowest cell SoH',cellSohMax:'Highest cell SoH',cellSocMin:'Lowest cell SoC',cellSocMax:'Highest cell SoC'})[k]||k;\n"
+"}\n"
+"function diagRenderMetrics(){\n"
+" const root=document.getElementById('diagMetrics');\n"
+" if(!root)return;\n"
+" const v=diagCurrentValues(diagActiveSegment);\n"
+" root.innerHTML=diagSegmentMetricKeys(diagActiveSegment).map(k=>{\n"
+"  let value=v[k]; let unit='';\n"
+"  if(['soc','soh','socEkf','soe','deltaSoc','maxSoc','humidity','chargeSocLimit','cellSohMin','cellSohMax','cellSocMin','cellSocMax'].includes(k))unit='%';\n"
+"  if(['packVoltage','cellVoltageMin','cellVoltageMax','cellVoltageSpread','imbalance','chargerInputVoltage','chargerOutputVoltage','pduVoltage'].includes(k))unit=' V';\n"
+"  if(['motorTemp','controllerTemp','motorMcuTemp','cellTempMin','cellTempMax','cellTempDelta','afeDieTemp','bmsAmbient','dischargeLimitTemp'].includes(k))unit=' °C';\n"
+"  if(k==='canAgeMs'||k==='diagAgeMs'||k==='vinAgeMs'||k==='sidAgeMs')unit=' ms';\n"
+"  if(k==='odo')unit=' km';\n"
+"  if(typeof value==='boolean')value=value?'Active':'Inactive';\n"
+"  if(value&&typeof value==='object')value=JSON.stringify(value);\n"
+"  return diagMetric(diagFieldLabel(k),value,unit);\n"
+" }).join('');\n"
+" const quality=document.getElementById('diagQuality');\n"
+" if(quality){\n"
+"  const age=diagNum((liveData.data||{}).canAgeMs);\n"
+"  quality.textContent=age===null?'CAN freshness unavailable':age<1200?'CAN data fresh':age<3000?'CAN data degraded':'CAN data stale';\n"
+" }\n"
+"}\n"
+"function renderDiagnostic(){\n"
+" const root=document.getElementById('telemetryContent');\n"
+" root.innerHTML=`<div class=\"diagnostic-tabs\" role=\"tablist\" aria-label=\"Diagnostic segments\">\n"
+" ${diagSegments.map(s=>`<button type=\"button\" class=\"diagnostic-tab ${s.id===diagActiveSegment?'active':''}\" role=\"tab\" aria-selected=\"${s.id===diagActiveSegment}\" data-segment=\"${s.id}\">${s.name}</button>`).join('')}\n"
+" </div>\n"
+" <section class=\"diag-panel\"><h3 id=\"diagSegmentTitle\"></h3><div class=\"diag-muted\" id=\"diagGoal\"></div><div id=\"diagMetrics\" class=\"diag-grid\"></div><p id=\"diagQuality\" class=\"diag-muted\"></p></section>\n"
+" <section class=\"diag-panel\"><h3>Segment-specific recording</h3><p class=\"diag-muted\">Only metrics belonging to the selected segment are captured. Fast signals are sampled about once per second; slower metrics are included every 5 seconds, with identity and full cell snapshots saved at session boundaries and notable events.</p><p class=\"diag-muted\">The export separates raw readings, calculated summaries, data-quality warnings, and heuristic observations.</p>\n"
+" <div class=\"diag-profile\">${diagProfiles.map((p,i)=>`<label><input type=\"radio\" name=\"diagProfile\" value=\"${p.id}\" ${i===0?'checked':''}><span><strong>${p.name}</strong><br><span class=\"diag-muted\">${p.minutes} minutes</span><br><span class=\"diag-muted\">${p.desc}</span></span></label>`).join('')}</div>\n"
+" <div class=\"diag-clock\"><div id=\"diagClockFace\" class=\"diag-clock-face\"><strong id=\"diagClock\">15:00</strong></div><div><strong id=\"diagRecordState\">Ready to record</strong><p id=\"diagRecordDetail\" class=\"diag-muted\">Choose a profile, then start this segment's recording.</p><p id=\"diagSampleCount\" class=\"diag-muted\">0 samples</p></div></div>\n"
+" <div class=\"diag-actions\"><button id=\"diagStart\">Start recording</button><button id=\"diagPause\" class=\"secondary\" disabled>Pause</button><button id=\"diagStop\" class=\"danger\" disabled>Stop & finalize</button><button id=\"diagExport\" class=\"secondary\" disabled>Download JSON</button></div>\n"
+" </section>\n"
+"`;\n"
+" root.querySelectorAll('[data-segment]').forEach(b=>b.addEventListener('click',()=>{\n"
+"   if(diagSession && !diagSession.finalized && diagSession.segment!==b.dataset.segment){alert('Stop or finalize the active recording before switching segments.');return;}\n"
+"   diagActiveSegment=b.dataset.segment;renderDiagnostic();\n"
+" }));\n"
+" document.getElementById('diagSegmentTitle').textContent=diagSegments.find(s=>s.id===diagActiveSegment).name;\n"
+" document.getElementById('diagGoal').textContent=diagSegments.find(s=>s.id===diagActiveSegment).goal;\n"
+" document.getElementById('diagStart').addEventListener('click',diagStartRecording);\n"
+" document.getElementById('diagPause').addEventListener('click',diagTogglePause);\n"
+" document.getElementById('diagStop').addEventListener('click',()=>diagFinalize(false));\n"
+" document.getElementById('diagExport').addEventListener('click',diagDownload);\n"
+" diagRenderMetrics();diagUpdateRecorderUI();\n"
+"}\n"
+"function diagIdentity(){\n"
+" const {x}=diagGet();\n"
+" return {vin:x.vin||null,scooter_id:x.sid||null,firmware:{bms:x.bfw||null,bcm:x.cfw||null,gateway:x.gfw||null,motor:x.mfw||null},hardware_version:x.bhw??null,bin_id:x.bin||null};\n"
+"}\n"
+"function diagFullCellSnapshot(){\n"
+" const {c,x}=diagGet();\n"
+" return {cell_voltage_v:Array.isArray(c.v)?c.v.slice():[],cell_soh:Array.isArray(c.h)?c.h.slice():[],cell_soc:Array.isArray(x.cs)?x.cs.slice():[],cell_temperatures:Array.isArray(x.ct)?x.ct.slice():[]};\n"
+"}\n"
+"function diagBatteryFlags(v){\n"
+" const flags=[];\n"
+" if(diagNum(v.soh)!==null&&Number(v.soh)<70)flags.push({severity:'review',code:'LOW_REPORTED_SOH',message:'The BMS-reported SoH is below the configurable 70% screening threshold; verify the BMS definition and measurement conditions.'});\n"
+" if(diagNum(v.cellVoltageSpread)!==null&&Number(v.cellVoltageSpread)>0.08)flags.push({severity:'review',code:'CELL_SPREAD_HIGH',message:'Cell-voltage spread exceeds the preliminary 0.08 V screening threshold. Compare at a similar SoC and load.'});\n"
+" if(diagNum(v.cellTempDelta)!==null&&Number(v.cellTempDelta)>10)flags.push({severity:'review',code:'CELL_TEMP_DELTA_HIGH',message:'Cell temperature spread exceeds the preliminary 10 °C screening threshold.'});\n"
+" if(diagNum(v.humidity)!==null&&Number(v.humidity)>80)flags.push({severity:'info',code:'HUMIDITY_HIGH',message:'Humidity reading is high; confirm sensor scaling and location. Humidity alone does not establish battery damage.'});\n"
+" if(diagNum(v.canAgeMs)===null||Number(v.canAgeMs)>=3000)flags.push({severity:'data_quality',code:'CAN_STALE',message:'CAN data is stale or unavailable; health conclusions may be unreliable.'});\n"
+" return flags;\n"
+"}\n"
+"function diagBuildSample(elapsedMs){\n"
+" const v=diagCurrentValues(diagActiveSegment),keys=diagSegmentMetricKeys(diagActiveSegment);\n"
+" const fastKeys={activity:['fbrake','rbrake','hbeam','start','kill','storage','horn','indl','indr','indc','key','stand','dfan','feco','seco','mode','rpm'],\n"
+" battery:['soc','socEkf','soe','soh','packVoltage','packCurrent','cellVoltageSpread','weakestCellIndex','strongestCellIndex'],\n"
+" motor:['rpm','mcRpm','tcRpm','motorCurrent','packCurrent','throttleOut','throttle1','throttle3','motorTemp','controllerTemp'],\n"
+" charger:['chargerConnected','chargerInputVoltage','chargerOutputVoltage','chargerOutputCurrent','chargerPower','soc'],\n"
+" ride:['rpm','throttleOut','throttle1','throttle3','motorCurrent','packCurrent','packVoltage','soc','fbrake','rbrake','odo','mode','ax','ay','az','pitch','roll']};\n"
+" const fast=fastKeys[diagActiveSegment]||keys;\n"
+" const snapshotExtras={\n"
+"  activity:['odo','bmsUptime','canAgeMs','diagAgeMs','vinAgeMs','sidAgeMs','gatewayAgeMs'],\n"
+"  battery:['soh','deltaSoc','cellVoltageMin','cellVoltageMax','cellVoltageSpread','cellTempMin','cellTempMax','humidity','deratedDischarge','deratedCharge','deratedRegen'],\n"
+"  motor:['controllerTemp','motorMcuTemp','deratedDischarge','deratedRegen'],\n"
+"  charger:['chargerFan1','chargerFan2','chargeSocLimit','deratedCharge','cellVoltageSpread'],\n"
+"  ride:['motorTemp','controllerTemp','cellTempMin','cellTempMax','odo','pitch','roll']\n"
+" };\n"
+" const profileId=diagSession.profile;\n"
+" const slowKeys=profileId==='snapshot'?(snapshotExtras[diagActiveSegment]||[]):keys;\n"
+" const slowInterval=profileId==='snapshot'?10:5;\n"
+" const metrics={};fast.forEach(k=>metrics[k]=v[k]??null);\n"
+" if(Math.floor(elapsedMs/1000)%slowInterval===0) slowKeys.filter(k=>!fast.includes(k)).forEach(k=>metrics[k]=v[k]??null);\n"
+" const sample={elapsed_ms:elapsedMs,metrics,data_quality:{can_age_ms:v.canAgeMs??null,can_online:!!(liveData.data||{}).canOnline}};\n"
+" if(diagActiveSegment==='battery'){\n"
+"  sample.cell_summary={min_v:v.cellVoltageMin,max_v:v.cellVoltageMax,spread_v:v.cellVoltageSpread,weakest_cell_index:v.weakestCellIndex,strongest_cell_index:v.strongestCellIndex,cell_temp_min:v.cellTempMin,cell_temp_max:v.cellTempMax};\n"
+"  const cellAlert=diagNum(v.cellVoltageSpread)!==null&&v.cellVoltageSpread>0.08;\n"
+"  if(!diagSession.lastCellSnapshot || elapsedMs===0 || (cellAlert&&!diagSession._cellAlertActive)){\n"
+"   sample.cell_snapshot=diagFullCellSnapshot();diagSession.lastCellSnapshot=elapsedMs;\n"
+"  }\n"
+"  diagSession._cellAlertActive=cellAlert;\n"
+" }\n"
+" return sample;\n"
+"}\n"
+"function diagStartRecording(){\n"
+" if(diagSession&&!diagSession.finalized){alert('A recording is already active. Stop it before starting another.');return;}\n"
+" const profileId=document.querySelector('input[name=\"diagProfile\"]:checked')?.value||'snapshot';\n"
+" const profile=diagProfiles.find(p=>p.id===profileId)||diagProfiles[0];\n"
+" const v=diagCurrentValues(diagActiveSegment);\n"
+" diagSession={schema_version:'1.0',project:'Vehicle CAN Diagnostic Tool',units:{pack_voltage:'V',cell_voltage:'V',temperature:'degC after /100 scaling where noted by firmware UI',pack_current:'A after /100 scaling',distance:'km',elapsed_time:'ms'},segment:diagActiveSegment,segment_name:diagSegments.find(s=>s.id===diagActiveSegment).name,profile:profile.id,planned_duration_seconds:profile.minutes*60,started_uptime_ms:Math.round(performance.now()),started_at:null,paused:false,finalized:false,elapsed_ms:0,samples:[],events:[],transition_stats:{},identity:diagIdentity(),initial_values:v,initial_cell_snapshot:diagFullCellSnapshot(),lastCellSnapshot:0,observations:[],summary:{}};\n"
+" diagTransitionState={};Object.keys(diagMetricNames).forEach(k=>{diagTransitionState[k]=v[k];diagTransitionStats[k]={transitions:0,total_on_ms:0,on_since:(v[k]===true?0:null),last: v[k]};});\n"
+" diagLastSampleMs=performance.now();diagSession.samples.push(diagBuildSample(0));\n"
+" diagTimer=setInterval(diagTick,1000);diagUpdateRecorderUI();\n"
+"}\n"
+"function diagTick(){\n"
+" if(!diagSession||diagSession.finalized||diagSession.paused)return;\n"
+" const now=performance.now();diagSession.elapsed_ms=Math.max(0,Math.round(now-diagSession.started_uptime_ms));\n"
+" const elapsed=diagSession.elapsed_ms;\n"
+" const v=diagCurrentValues(diagSession.segment);\n"
+" if(diagSession.segment==='activity'){\n"
+"  const priorMode=diagSession._lastMode;\n"
+"  if(priorMode!==undefined && v.mode!==priorMode)diagSession.events.push({elapsed_ms:elapsed,type:'drive_mode_change',from:priorMode,to:v.mode});\n"
+"  diagSession._lastMode=v.mode;\n"
+"  ['navJoystick','parkAssistA','parkAssistB'].forEach(k=>{\n"
+"   const cur=v[k],prev=diagSession['_last_'+k];\n"
+"   if(prev!==undefined && cur!==prev && cur!==null && cur!==undefined)diagSession.events.push({elapsed_ms:elapsed,type:'control_event',signal:k,from:prev,to:cur});\n"
+"   diagSession['_last_'+k]=cur;\n"
+"  });\n"
+"  const priorUptime=diagSession._lastBmsUptime;\n"
+"  if(priorUptime!==undefined && diagNum(v.bmsUptime)!==null && Number(v.bmsUptime)<Number(priorUptime)){\n"
+"   diagSession.events.push({elapsed_ms:elapsed,type:'bms_reset_detected',previous_uptime:priorUptime,current_uptime:v.bmsUptime});\n"
+"  }\n"
+"  diagSession._lastBmsUptime=v.bmsUptime;\n"
+"  Object.keys(diagMetricNames).forEach(k=>{\n"
+"   const prev=diagTransitionState[k],cur=v[k];\n"
+"   if(typeof cur==='boolean'&&typeof prev==='boolean'&&cur!==prev){\n"
+"    const st=diagTransitionStats[k];st.transitions++;if(prev===true&&st.on_since!==null)st.total_on_ms+=elapsed-st.on_since;\n"
+"    st.on_since=cur?elapsed:null;st.last=cur;\n"
+"    diagSession.events.push({elapsed_ms:elapsed,type:'switch_transition',signal:k,from:prev,to:cur});\n"
+"   }\n"
+"   diagTransitionState[k]=cur;\n"
+"  });\n"
+"  if(v.kill===true&&Number(v.rpm)>0)diagSession.events.push({elapsed_ms:elapsed,type:'safety_flag',code:'KILL_SWITCH_WHILE_RPM_NONZERO'});\n"
+"  if(v.stand===true&&Number(v.rpm)>0)diagSession.events.push({elapsed_ms:elapsed,type:'safety_flag',code:'SIDE_STAND_WHILE_RPM_NONZERO'});\n"
+"  if((v.fbrake===true||v.rbrake===true)&&Number(v.throttleOut)>20)diagSession.events.push({elapsed_ms:elapsed,type:'safety_flag',code:'BRAKE_WITH_HIGH_THROTTLE'});\n"
+" }\n"
+" if(elapsed-diagLastSampleMs>=950){diagSession.samples.push(diagBuildSample(elapsed));diagLastSampleMs=elapsed;}\n"
+" if(elapsed>=diagSession.planned_duration_seconds*1000){diagFinalize(true);return;}\n"
+" diagUpdateRecorderUI();\n"
+"}\n"
+"function diagTogglePause(){\n"
+" if(!diagSession||diagSession.finalized)return;\n"
+" if(!diagSession.paused){diagSession.paused=true;diagSession.pauseStarted=performance.now();}\n"
+" else {const now=performance.now(),delta=now-diagSession.pauseStarted;diagSession.started_uptime_ms+=delta;diagSession.paused=false;diagSession.events.push({elapsed_ms:diagSession.elapsed_ms,type:'recording_resumed'});}\n"
+" diagUpdateRecorderUI();\n"
+"}\n"
+"function diagFinalize(auto){\n"
+" if(!diagSession||diagSession.finalized)return;\n"
+" if(diagTimer){clearInterval(diagTimer);diagTimer=null;}\n"
+" const now=performance.now();\n"
+" if(diagSession.paused&&diagSession.pauseStarted)diagSession.started_uptime_ms+=now-diagSession.pauseStarted;\n"
+" diagSession.elapsed_ms=Math.max(0,Math.round(now-diagSession.started_uptime_ms));\n"
+" const final=diagCurrentValues(diagSession.segment);\n"
+" diagSession.samples.push(diagBuildSample(diagSession.elapsed_ms));\n"
+" diagSession.final_values=final;diagSession.final_cell_snapshot=diagFullCellSnapshot();diagSession.finalized=true;\n"
+" diagSavedSessions[diagSession.segment]=diagSession;\n"
+" diagSession.ended_uptime_ms=Math.round(now);diagSession.end_reason=auto?'duration_completed':'manually_stopped';\n"
+" if(diagSession.segment==='activity'){\n"
+"  const elapsed=diagSession.elapsed_ms;\n"
+"  Object.keys(diagTransitionStats).forEach(k=>{const st=diagTransitionStats[k];if(st.last===true&&st.on_since!==null)st.total_on_ms+=elapsed-st.on_since;});\n"
+"  diagSession.transition_stats=JSON.parse(JSON.stringify(diagTransitionStats));\n"
+"  const modeEvents=diagSession.events.filter(e=>e.type==='drive_mode_change');\n"
+"  const modeDurations={};let currentMode=diagSession.initial_values.mode,prevElapsed=0;\n"
+"  modeEvents.forEach(e=>{modeDurations[currentMode]=(modeDurations[currentMode]||0)+Math.max(0,e.elapsed_ms-prevElapsed);currentMode=e.to;prevElapsed=e.elapsed_ms;});\n"
+"  modeDurations[currentMode]=(modeDurations[currentMode]||0)+Math.max(0,diagSession.elapsed_ms-prevElapsed);\n"
+"  diagSession.mode_stats={changes:modeEvents.length,time_ms_by_mode:modeDurations};\n"
+"  diagSession.event_counts={nav_joystick:diagSession.events.filter(e=>e.type==='control_event'&&e.signal==='navJoystick').length,park_assist_a:diagSession.events.filter(e=>e.type==='control_event'&&e.signal==='parkAssistA').length,park_assist_b:diagSession.events.filter(e=>e.type==='control_event'&&e.signal==='parkAssistB').length,bms_resets:diagSession.events.filter(e=>e.type==='bms_reset_detected').length};\n"
+"  const startO=diagNum(diagSession.initial_values.odo),endO=diagNum(final.odo);\n"
+"  diagSession.summary.distance_km=startO!==null&&endO!==null?Math.max(0,endO-startO):null;\n"
+" }\n"
+" if(diagSession.segment==='battery'){\n"
+"  const a=diagNum(diagSession.initial_values.soc),b=diagNum(final.soc);\n"
+"  diagSession.summary.soc_change_percent=a!==null&&b!==null?b-a:null;\n"
+"  const currents=diagSession.samples.map(s=>diagNum(s.metrics.packCurrent)).filter(n=>n!==null);\n"
+"  diagSession.summary.average_absolute_pack_current=currents.length?currents.reduce((a,b)=>a+Math.abs(b),0)/currents.length:null;\n"
+"  diagSession.summary.peak_absolute_pack_current=currents.length?Math.max(...currents.map(Math.abs)):null;\n"
+"  diagSession.summary.pack_voltage_stats=statsFor('packVoltage');\n"
+"  diagSession.summary.cell_voltage_spread_stats=statsFor('cellVoltageSpread');\n"
+"  diagSession.summary.cell_temperature_stats=statsFor('cellTempMax');\n"
+"  const voltageCurrentPairs=diagSession.samples.map(s=>({v:diagNum(s.metrics.packVoltage),i:diagNum(s.metrics.packCurrent)})).filter(p=>p.v!==null&&p.i!==null);\n"
+"  diagSession.summary.observed_voltage_span_v=voltageCurrentPairs.length?Math.max(...voltageCurrentPairs.map(p=>p.v))-Math.min(...voltageCurrentPairs.map(p=>p.v)):null;\n"
+"  const resistanceCandidates=[];\n"
+"  for(let i=1;i<voltageCurrentPairs.length;i++){const dv=voltageCurrentPairs[i-1].v-voltageCurrentPairs[i].v,di=voltageCurrentPairs[i].i-voltageCurrentPairs[i-1].i;if(Math.abs(di)>=5&&dv/di>0)resistanceCandidates.push(dv/di);}\n"
+"  diagSession.summary.exploratory_internal_resistance_ohm=resistanceCandidates.length?resistanceCandidates.reduce((a,b)=>a+b,0)/resistanceCandidates.length:null;\n"
+"  diagSession.summary.internal_resistance_note='Exploratory only; requires stable load steps, validated current polarity/scaling, and controlled conditions. Do not treat as a certified battery resistance measurement.';\n"
+"  diagSession.observations=diagBatteryFlags(final);\n"
+" }\n"
+"\n"
+" const numsFor=(key)=>diagSession.samples.map(s=>diagNum(s.metrics[key])).filter(n=>n!==null);\n"
+" const statsFor=(key)=>{const a=numsFor(key);return a.length?{min:Math.min(...a),max:Math.max(...a),average:a.reduce((sum,n)=>sum+n,0)/a.length,count:a.length}:null;};\n"
+" if(diagSession.segment==='motor'){\n"
+"  const currents=numsFor('motorCurrent').map(Math.abs),temps=numsFor('motorTemp');\n"
+"  const motorTemps=diagSession.samples.map(s=>({t:s.elapsed_ms,v:diagNum(s.metrics.motorTemp)})).filter(p=>p.v!==null);\n"
+"  const tempRisePerMinute=motorTemps.length>1&&motorTemps[motorTemps.length-1].t>motorTemps[0].t?((motorTemps[motorTemps.length-1].v-motorTemps[0].v)/((motorTemps[motorTemps.length-1].t-motorTemps[0].t)/60000)):null;\n"
+"  const motorTempAbove80=diagSession.samples.filter(s=>diagNum(s.metrics.motorTemp)!==null&&Number(s.metrics.motorTemp)>80).length;\n"
+"  const controllerTempAbove80=diagSession.samples.filter(s=>diagNum(s.metrics.controllerTemp)!==null&&Number(s.metrics.controllerTemp)>80).length;\n"
+"  diagSession.summary={...(diagSession.summary||{}),motor_current:{average_abs:currents.length?currents.reduce((a,b)=>a+b,0)/currents.length:null,peak_abs:currents.length?Math.max(...currents):null},motor_temperature:statsFor('motorTemp'),motor_temperature_rise_c_per_minute:tempRisePerMinute,controller_temperature:statsFor('controllerTemp'),temperature_screening_thresholds_c:{motor:80,controller:80},approx_time_above_80c_ms:{motor:motorTempAbove80*1000,controller:controllerTempAbove80*5000},rpm:statsFor('rpm'),rpm_channel_mismatch_samples:diagSession.samples.filter(s=>diagNum(s.metrics.mcRpm)!==null&&diagNum(s.metrics.tcRpm)!==null&&Math.abs(Number(s.metrics.mcRpm)-Number(s.metrics.tcRpm))>100).length,throttle_channel_mismatch_samples:diagSession.samples.filter(s=>diagNum(s.metrics.throttle1)!==null&&diagNum(s.metrics.throttle3)!==null&&Math.abs(Number(s.metrics.throttle1)-Number(s.metrics.throttle3))>50).length};\n"
+" }\n"
+" if(diagSession.segment==='charger'){\n"
+"  const a=diagNum(diagSession.initial_values.soc),b=diagNum(final.soc);\n"
+"  diagSession.summary={...(diagSession.summary||{}),soc_gained_percent:a!==null&&b!==null?b-a:null,output_power:statsFor('chargerPower'),output_current:statsFor('chargerOutputCurrent'),output_energy_wh:null,efficiency_percent:null,cc_to_cv_transition_time_seconds:null,output_current_following_derated_limit:null,limitations:['Input current is not exposed by the current firmware API, so input power and charger efficiency cannot be calculated reliably.','CC-to-CV transition time requires a validated charge-stage signal or an agreed inference rule.']};\n"
+"  const samples=diagSession.samples;\n"
+"  let wh=0,energyValid=samples.length>1;\n"
+"  for(let i=1;i<samples.length;i++){\n"
+"   const p0=diagNum(samples[i-1].metrics.chargerPower),p1=diagNum(samples[i].metrics.chargerPower);\n"
+"   const dt=(samples[i].elapsed_ms-samples[i-1].elapsed_ms)/3600000;\n"
+"   if(p0===null||p1===null||dt<0||dt>0.02){energyValid=false;break;}\n"
+"   wh+=(p0+p1)/2*dt;\n"
+"  }\n"
+"  diagSession.summary.output_energy_wh=energyValid?wh:null;\n"
+" }\n"
+" if(diagSession.segment==='ride'){\n"
+"  const startO=diagNum(diagSession.initial_values.odo),endO=diagNum(final.odo);\n"
+"  const currents=numsFor('motorCurrent').map(Math.abs),temps=[...numsFor('motorTemp'),...numsFor('controllerTemp'),...numsFor('cellTempMin'),...numsFor('cellTempMax')];\n"
+"  const volts=numsFor('packVoltage'),packI=numsFor('packCurrent');\n"
+"  diagSession.summary={...(diagSession.summary||{}),distance_km:startO!==null&&endO!==null?Math.max(0,endO-startO):null,peak_motor_current:currents.length?Math.max(...currents):null,maximum_observed_temperature:temps.length?Math.max(...temps):null,voltage_min:volts.length?Math.min(...volts):null,voltage_max:volts.length?Math.max(...volts):null,brake_events:diagSession.events.filter(e=>e.type==='switch_transition'&&(e.signal==='fbrake'||e.signal==='rbrake')&&e.to===true).length,wh_per_km:null,average_speed_kmh:null,top_speed_kmh:null,ride_roughness_count:null,hard_braking_count:null,harsh_acceleration_count:null,tilt_or_fall_events:null,limitations:['Average/top speed require a validated RPM-to-road-speed conversion for the scooter configuration.','Wh/km requires validated current sign/scaling and distance calibration; it is not inferred here.','IMU thresholds and fall detection require vehicle-specific calibration and are not enabled as definitive alerts.']};\n"
+" }\n"
+" const ages=diagSession.samples.map(s=>s.data_quality.can_age_ms).filter(n=>Number.isFinite(n));\n"
+" diagSession.data_quality={sample_count:diagSession.samples.length,missing_or_stale_can_samples:ages.filter(n=>n>=3000).length,can_age_ms_min:ages.length?Math.min(...ages):null,can_age_ms_max:ages.length?Math.max(...ages):null};\n"
+" diagSession.ai_report_guidance={purpose:'Analyze only the selected segment data. Separate measured values, derived calculations, and hypotheses. Cite sample times for findings; mention missing/stale data; do not infer battery safety or validated SoH from heuristics alone.',requested_sections:['Executive summary','Observed trends','Anomalies with supporting samples','Data-quality limitations','Recommended follow-up checks']};\n"
+" diagUpdateRecorderUI();\n"
+"}\n"
+"function diagUpdateRecorderUI(){\n"
+" if(!document.getElementById('diagClock'))return;\n"
+" const s=diagSession&&diagSession.segment===diagActiveSegment?diagSession:(diagSavedSessions[diagActiveSegment]||null);\n"
+" const profile=diagProfiles.find(p=>p.id===(s?s.profile:(document.querySelector('input[name=\"diagProfile\"]:checked')?.value||'quick_check'))) ||diagProfiles[0];\n"
+" const duration=s?s.planned_duration_seconds*1000:profile.minutes*60000;\n"
+" const elapsed=s?s.elapsed_ms:0,remaining=Math.max(0,duration-elapsed);\n"
+" const sec=Math.ceil(remaining/1000),m=String(Math.floor(sec/60)).padStart(2,'0'),ss=String(sec%60).padStart(2,'0');\n"
+" document.getElementById('diagClock').textContent=m+':'+ss;\n"
+" const face=document.getElementById('diagClockFace');face.style.setProperty('--progress',Math.min(100,duration?elapsed/duration*100:0)+'%');face.classList.toggle('running',!!s&&!s.finalized&&!s.paused);\n"
+" document.getElementById('diagRecordState').textContent=!s?'Ready to record':s.finalized?'Recording finalized':s.paused?'Paused':'Recording '+s.segment_name;\n"
+" document.getElementById('diagRecordDetail').textContent=!s?'Choose a profile, then start this segment only.':s.finalized?'Session finalized. Download the segment-specific JSON when ready.':s.paused?'Timer and sampling are paused.':'The timer animates while this segment is recording.';\n"
+" document.getElementById('diagSampleCount').textContent=(s?s.samples.length:0)+' samples'+(s?' · '+Math.floor((s.elapsed_ms||0)/1000)+' seconds elapsed':'');\n"
+" document.getElementById('diagStart').disabled=!!diagSession&&!diagSession.finalized;\n"
+" document.getElementById('diagPause').disabled=!s||s.finalized;\n"
+" document.getElementById('diagPause').textContent=s&&s.paused?'Resume':'Pause';\n"
+" document.getElementById('diagStop').disabled=!s||s.finalized;\n"
+" document.getElementById('diagExport').disabled=!s||!s.finalized;\n"
+" const obs=document.getElementById('diagObservations');\n"
+" if(obs&&s&&s.finalized){\n"
+"  const items=s.observations||[];\n"
+"  obs.innerHTML=items.length?items.map(o=>`<li><strong>${o.severity}</strong> — ${o.message}</li>`).join(''):'<li>No configured screening flags triggered; this does not certify the battery or vehicle as healthy.</li>';\n"
+" }\n"
+"}\n"
+"function diagDownload(){\n"
+" const session=diagSession&&diagSession.segment===diagActiveSegment&&diagSession.finalized?diagSession:diagSavedSessions[diagActiveSegment];\n"
+" if(!session||!session.finalized)return;\n"
+" const blob=new Blob([JSON.stringify(session,null,2)],{type:'application/json'});\n"
+" const url=URL.createObjectURL(blob),a=document.createElement('a');\n"
+" a.href=url;a.download='vcd-'+session.segment+'-'+session.profile+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);\n"
+"}\n"
 "document.querySelectorAll('.control').forEach(btn => { btn.disabled = true; });\n"
 "renderCategories();\n"
 "pollFirmwareApi();\n"
-"setInterval(pollFirmwareApi,1500);\n"
+"setInterval(pollFirmwareApi,1000);\n"
 "</script>\n"
 "</body>\n"
 "</html>\n"
@@ -744,7 +1123,7 @@ void handleCharger(){
 }
 
 #define EXTRA_APPEND(...) do{ n=snprintf(p,rem,__VA_ARGS__); if(n<0||n>=rem){server.send(500,"application/json","{}");return;} p+=n; rem-=n; }while(0)
-char extraBuf[1792];
+char extraBuf[2600];
 void handleExtra(){
   xSemaphoreTake(mtx, portMAX_DELAY);
   Telemetry t = snap;
@@ -769,6 +1148,7 @@ void handleExtra(){
     (unsigned long)t.odometer,(unsigned long)(t.bmsUptimeMs/1000ULL),t.bmsHwVer,
     t.bmsFw[0],t.bmsFw[1],t.bmsFw[2],t.bcmFw[0],t.bcmFw[1],t.bcmFw[2],
     t.gtwFw[0],t.gtwFw[1],t.gtwFw[2],t.motorFw[0],t.motorFw[1],t.motorFw[2],bin);
+  // ===== v4.9 additions =====
   { int32_t f=(int32_t)(t.chgSocLimit*100.0f);
     EXTRA_APPEND("\"pdu\":%u,\"chglim\":%d,\"ctemp\":%d,\"mcutemp\":%d,\"tho\":%d,\"th1\":%d,\"th3\":%d,\"tcrpm\":%d,\"mcrpm\":%d,\"diagage\":%ld,",
       t.pduVoltage,f,t.controllerTemp,t.motorMcuTemp,t.throttleOut,t.throttle1,t.throttle3,
@@ -806,12 +1186,12 @@ void IRAM_ATTR applyFrame(Telemetry &t, const twai_message_t &m){
     case 0x13D: if(m.data_length_code<6)return; t.deltaSoc=d[4]+(d[5]<<8); break;
     case 0x141: if(m.data_length_code<8)return; t.voltage=d[0]+(d[1]<<8); t.imbalance=d[2]+(d[3]<<8); break;
     case 0x200: if(m.data_length_code<8)return; t.rangeKm=d[6]; t.displayFan=((d[7]>>4)&1); break;
-    case 0x510: if(m.data_length_code<4)return; { int16_t raw=(int16_t)(d[2]+(d[3]<<8)); t.rpm=raw*5/6; t.tcRpm=t.rpm; } break; 
-    case 0x601: if(m.data_length_code<4)return; t.mcRpm=(int32_t)(d[0]|(d[1]<<8)|(d[2]<<16)|((uint32_t)d[3]<<24)); break;  
-    case 0x101: if(m.data_length_code<5)return; t.driveMode=d[1]; t.smartEco=((d[3]>>6)&1); t.forcedEco=((d[4]>>2)&1); t.navJoystick=d[1]&0x07; break;  
+    case 0x510: if(m.data_length_code<4)return; { int16_t raw=(int16_t)(d[2]+(d[3]<<8)); t.rpm=raw*5/6; t.tcRpm=t.rpm; } break;  // working hypothesis: Traction Control RPM
+    case 0x601: if(m.data_length_code<4)return; t.mcRpm=(int32_t)(d[0]|(d[1]<<8)|(d[2]<<16)|((uint32_t)d[3]<<24)); break;  // probable: Motor Control RPM (real ride only)
+    case 0x101: if(m.data_length_code<5)return; t.driveMode=d[1]; t.smartEco=((d[3]>>6)&1); t.forcedEco=((d[4]>>2)&1); t.navJoystick=d[1]&0x07; break;  // D1 bits 0-2: nav joystick, raw code
     case 0x102:
       if(m.data_length_code<5)return;
-      if(m.data_length_code>=8) t.pduVoltage=d[6]+(d[7]<<8);   
+      if(m.data_length_code>=8) t.pduVoltage=d[6]+(d[7]<<8);   // confirmed ~12.0-12.1 V
       t.sideStand=(d[4]&1);
       t.frontBrake=((d[0]>>0)&1); t.rearBrake=((d[0]>>1)&1); t.highBeam=((d[0]>>2)&1);
       t.startSwitch=((d[0]>>4)&1); t.killSwitch=((d[0]>>5)&1); t.storageSwitch=((d[0]>>6)&1);
@@ -840,6 +1220,7 @@ void IRAM_ATTR applyFrame(Telemetry &t, const twai_message_t &m){
       if(m.data_length_code<4)return;
       t.chargerIV=d[0]|(d[1]<<8)|(d[2]<<16)|((uint32_t)d[3]<<24);
       break;
+    // ===== EXTRA (newly discovered) frames =====
     case 0x130: if(m.data_length_code<5)return; t.bmsUptimeMs=(uint64_t)d[0]|((uint64_t)d[1]<<8)|((uint64_t)d[2]<<16)|((uint64_t)d[3]<<24)|((uint64_t)d[4]<<32); break;
     case 0x136: if(m.data_length_code<8)return; for(int i=0;i<4;i++) t.cellTemp[i]=(int16_t)(d[i*2]+(d[i*2+1]<<8)); break;
     case 0x137: if(m.data_length_code<8)return; t.cellTemp[4]=(int16_t)(d[0]+(d[1]<<8)); t.eftTemp=(int16_t)(d[2]+(d[3]<<8)); t.eciTemp=(int16_t)(d[4]+(d[5]<<8)); t.senseTemp=(int16_t)(d[6]+(d[7]<<8)); break;
@@ -871,21 +1252,21 @@ void IRAM_ATTR applyFrame(Telemetry &t, const twai_message_t &m){
       t.throttle3=((d[5]>>4)|((d[6]&15)<<4))-(((d[6]>>3)&1)*256);
       t.throttle1=((d[6]>>4)|((d[7]&15)<<4))-(((d[7]>>3)&1)*256);
       break;
-    case 0x206: if(m.data_length_code<8)return; { float f; memcpy(&f,&d[4],4); t.chgSocLimit=f; } break; 
-    case 0x91: if(m.data_length_code<8)return; memcpy(t.vin,d,8); t.lastVinMs=millis(); break; 
-    case 0x92: if(m.data_length_code<8)return; memcpy(t.vin+8,d,8); t.vin[16]=0; t.lastVinMs=millis(); break; 
-    case 0x93: if(m.data_length_code<1)return; t.vin[16]=(char)d[0]; t.vin[17]=0; t.lastVinMs=millis(); break; 
-    case 0x7A: if(m.data_length_code<8)return; memcpy(t.scooterId,d,8); t.scooterId[8]=0; t.lastSidMs=millis(); break; 
-    case 0x7B1: case 0x7B9: t.lastDiagMs=millis(); break;                                     
-    case 0x120: if(m.data_length_code<3)return; t.parkAssistA=d[2]; t.lastParkAMs=millis(); break;  
+    case 0x206: if(m.data_length_code<8)return; { float f; memcpy(&f,&d[4],4); t.chgSocLimit=f; } break;  // confirmed: charge SoC limit
+    case 0x91: if(m.data_length_code<8)return; memcpy(t.vin,d,8); t.lastVinMs=millis(); break;  // VIN broadcast part 1
+    case 0x92: if(m.data_length_code<8)return; memcpy(t.vin+8,d,8); t.vin[16]=0; t.lastVinMs=millis(); break;  // VIN broadcast part 2
+    case 0x93: if(m.data_length_code<1)return; t.vin[16]=(char)d[0]; t.vin[17]=0; t.lastVinMs=millis(); break;  // VIN broadcast part 3
+    case 0x7A: if(m.data_length_code<8)return; memcpy(t.scooterId,d,8); t.scooterId[8]=0; t.lastSidMs=millis(); break; // Scooter-ID broadcast
+    case 0x7B1: case 0x7B9: t.lastDiagMs=millis(); break;                                      // diagnostic tool presence
+    case 0x120: if(m.data_length_code<3)return; t.parkAssistA=d[2]; t.lastParkAMs=millis(); break;  // probable Parking Assist trigger A
     case 0x121: if(m.data_length_code<3)return; t.parkAssistB=d[2]; t.lastParkBMs=millis(); break;  
     case 0x18c:
       if(m.data_length_code<5)return;
       t.motorI=((d[2]>>5)|((d[3]&31)<<3))+((((d[3]>>5)|((d[4]&31)<<3))&1)*256)-(((d[3]>>5)&1)*512);
-      t.motorTemp=(((d[4]&63)<<2)|(d[3]>>6))-40;                                   
-      if(m.data_length_code>=6) t.controllerTemp=(((d[5]&63)<<2)|(d[4]>>6))-40;    
+      t.motorTemp=(((d[4]&63)<<2)|(d[3]>>6))-40;                                   // Motor Temp
+      if(m.data_length_code>=6) t.controllerTemp=(((d[5]&63)<<2)|(d[4]>>6))-40;    // Controller Temp (distinct from Motor Temp)
       break;
-    case 0x209: if(m.data_length_code<3)return; t.motorMcuTemp=(int16_t)d[2]; break; 
+    case 0x209: if(m.data_length_code<3)return; t.motorMcuTemp=(int16_t)d[2]; break;  // Motor MCU Temp (3rd, independent reading)
   }
 }
 
