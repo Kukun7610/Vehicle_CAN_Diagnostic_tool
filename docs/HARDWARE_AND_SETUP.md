@@ -5,7 +5,7 @@ There are two ways to get a working VCD Tool. Both use the **same hardware**: an
 | | Option 1: DIY | Option 2: Pre-built |
 |---|---|---|
 | Effort | Wiring + flashing | Plug in and use |
-| Soldering | None (jumper wires only) | None |
+| Soldering | Can be / Beginner (jumper wires only) | None |
 | Cost | Lowest | Slightly higher |
 | Best for | Makers, learners | Anyone who wants it ready |
 
@@ -26,13 +26,13 @@ There are two ways to get a working VCD Tool. Both use the **same hardware**: an
 
 | Qty | Part | Notes |
 |---|---|---|
-| 1 | **ESP32-C3 SuperMini** development board | USB-C, Wi-Fi + Bluetooth. This firmware is written for the C3 pin mapping below |
-| 1 | **SN65HVD230** CAN bus transceiver module | 3.3 V device, matches ESP32 logic levels |
-| 4 | Female-to-female jumper wires (≈10 cm) | ESP32-C3 ⇄ transceiver |
-| 2 | Female-to-male jumper wires (≈10 cm) | Transceiver ⇄ vehicle connector |
-| 1 | USB-C cable + power source | Phone, power bank or PC |
+| 1 | **ESP32-C3 Super Mini** HW 466AB development board [Buy Link](https://www.flyrobo.in/esp32-c3-supermini-development-board-wifi-bluetooth-usb-c-soldered) | USB-C, Wi-Fi + Bluetooth. This firmware is written for the C3 pin mapping below |
+| 1 | **SN65HVD230** CAN bus transceiver module [Buy Link](https://www.flyrobo.in/wcmcu-230-can-bus-module-based-on-sn65hvd230) | 3.3 V device, matches ESP32 logic levels |
+| 4 | Female-to-female jumper wires (≈10 cm) [Buy Link](https://www.flyrobo.in/40pcs_10cm_female_to_female_jumper_cable_wire_for_arduino) | ESP32-C3 ⇄ transceiver |
+| 2 | Female-to-male jumper wires (≈10 cm) [Buy Link](https://www.flyrobo.in/10cm_male_to_female_jumper_cable_wire_for_arduino) | Transceiver ⇄ vehicle connector |
+| 1 | USB-C cable + power source (Any 5v Charger) | Phone, power bank or PC |
 
-> ⚠️ **Use only one ESP32 board.** The sketch uses GPIO 10 (TX) and GPIO 20 (RX). Other ESP32 variants have different pins and require editing `CAN_TX` / `CAN_RX` in the sketch.
+> ⚠️ **Use only one ESP32-C3 Super Mini HW466AB board.** The sketch uses GPIO 10 (TX) and GPIO 20 (RX). Other ESP32 variants have different pins and require editing `CAN_TX` / `CAN_RX` in the sketch.
 
 ### 1.2 Pin connections
 
@@ -124,9 +124,9 @@ Next: [flash the firmware](#3-flashing-the-firmware), then [connect to the vehic
 
 ## Option 2: Get a pre-built device
 
-Don't want to wire anything? A fully assembled plug-and-play Ather OBD reader is sold by the author of the [ATHER-OBD-READER}(https://github.com/SAM0-0/ATHER-OBD-READER) project.
+Don't want to wire anything? A fully assembled plug-and-play A-OBD reader is sold by the author of the [A-OBD-READER](https://github.com/SAM0-0/ATHER-OBD-READER) project 
 
-> Please note that while this project utilizes the same hardware configuration as the ATHER-OBD-READER project, the firmware is entirely different. Because the software architecture has been completely redesigned, we cannot assume responsibility or liablity for any issues arising from the prebuilt hardware.
+> ℹ️ Please note that while this project utilizes the same hardware configuration as the ATHER-OBD-READER project, the firmware is entirely different. Because the software architecture has been completely redesigned, This project cannot assume responsibility or liability for any issues arising from the prebuilt hardware.
 
 
 ### Using a pre-built device with the VCD Tool firmware
@@ -148,12 +148,13 @@ To run **VCD Tool** on it:
 ## 3. Flashing the firmware
 Two way to flash
 ### 3.1 With ESP Flasher
-1. Connect your ESP module to your PC/Laptop via USB.
-2. Open the **ESP Flasher** application.
-3. Select the correct COM/Serial port your ESP32 is connected to.
-4. Select the proper `.bin` file provided in this folder for you selected hardware and click **Flash**.
-5. Wait a minute for the process to complete, then disconnect and reconnect the ESP32 to restart it.
-6. On your phone, look for a Wi-Fi network named **`VCD-Tool`**. If it appears, flashing worked ✅.
+1. Download the latest `VCD_Tool_C3.bin` file from [Releases](https://github.com/Kukun7610/Vehicle_CAN_Diagnostic_tool/releases)
+2. Connect your ESP module to your PC/Laptop via USB.
+3. Open the **ESP Flasher** application.
+4. Select the correct COM/Serial port your ESP32 is connected to.
+5. Select the proper `VCD_Tool_C3.bin` file and click **Flash**.
+6. Wait a minute for the process to complete, then disconnect and reconnect the ESP32-C3 to restart it.
+7. On your phone, look for a Wi-Fi network named **`VCD-Tool`**. If it appears, flashing worked ✅.
 
 
 ### 3.2.1 With Arduino IDE
@@ -170,8 +171,8 @@ No extra libraries are needed. `WiFi`, `WebServer` and the CAN driver (`driver/t
 
 ### 3.2.2 Open and configure the sketch
 
-1. Download or clone this repository.
-2. Open `firmware/VCD_Tool/VCD_Tool.ino` in the Arduino IDE.
+1. Download the latest `VCD_Tool_C3.ino` file from [Releases](https://github.com/Kukun7610/Vehicle_CAN_Diagnostic_tool/releases).
+2. Open `VCD_Tool_C3.ino` in the Arduino IDE.
 3. Select the board settings:
 
    | Setting | Value |
