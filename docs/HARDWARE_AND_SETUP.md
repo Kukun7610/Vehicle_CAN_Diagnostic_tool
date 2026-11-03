@@ -22,6 +22,8 @@ There are two ways to get a working VCD Tool. Both use the **same hardware**: an
 
 ## Option 1: DIY build
 
+DIY complete video guide : [VCD Tool Guide: DIY hardware build](https://youtu.be/7KZyOaOnmCU)
+
 ### 1.1 Parts list
 
 | Qty | Part | Notes |

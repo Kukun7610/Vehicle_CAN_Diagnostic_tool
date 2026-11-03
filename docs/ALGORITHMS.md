@@ -2,6 +2,12 @@
 
 How VCD Tool turns raw CAN frames into the readings on the dashboard. This document describes the **methods** only. It intentionally lists no CAN identifiers.
 
+> ℹ️ Listen-only: this tool never transmits on the vehicle’s CAN bus.
+>
+>The tool only listens to the CAN data your vehicle already sends. The ESP32’s CAN controller runs in listen-only mode, so it doesn’t send frames, request data, or even send acknowledgements. The firmware contains no CAN transmit code.
+>
+>What v2 adds is recording. The Diagnostic menu saves what it hears into a JSON log on your phone. The log is stored locally and is never sent back to the vehicle. The ESP32 serves its own Wi-Fi network for your phone, so no internet connection is needed.
+
 **Contents**
 
 1. [System architecture](#1-system-architecture)

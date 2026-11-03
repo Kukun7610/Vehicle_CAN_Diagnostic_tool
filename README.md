@@ -16,6 +16,12 @@
 <img src="docs/images/home-screen.png" alt="VCD Tool dashboard home screen" width="640">
 </div>
 
+
+> ℹ️ Listen-only: this tool never transmits on the vehicle’s CAN bus.
+>
+>The tool only listens to the CAN data your vehicle already sends. The ESP32’s CAN controller runs in listen-only mode, so it doesn’t send frames, request data, or even send acknowledgements. The firmware contains no CAN transmit code.
+>
+>What `v2` adds is recording. The Diagnostic menu saves what it hears into a JSON log on your phone. The log is stored locally and is never sent back to the vehicle. The ESP32 serves its own Wi-Fi network for your phone, so no internet connection is needed.
 ---
 
 ## 📖 Table of Contents
@@ -35,7 +41,7 @@
 
 ## 🔍 Overview
 
-The ESP32-TWAI connects to the vehicle's CAN bus through a CAN transceiver, decodes the frames it receives, and hosts a mobile-friendly dashboard over its own Wi-Fi hotspot. No internet, no app install, no phone pairing: join the hotspot, open a browser, and read your vehicle's data live.
+The ESP32-C3 connects to the vehicle's CAN bus through a CAN transceiver, decodes the frames it receives, and hosts a mobile-friendly dashboard over its own Wi-Fi hotspot. No internet, no app install, no phone pairing: join the hotspot, open a browser, and read your vehicle's data live.
 
 > **Note:** Only signals that the firmware can decode are shown. Some values are marked **Estimated**, **Hypothesis** or **Rarely seen** on the dashboard because their meaning is not fully confirmed or they are broadcast only occasionally.
 
@@ -63,6 +69,7 @@ Other highlights:
 ## 🚀 Quick Start
 
 1. **Get the hardware** (DIY build or pre-built) → [Hardware & Setup guide](docs/HARDWARE_AND_SETUP.md)
+2. **DIY complete video guide** → [VCD Tool Guide: DIY hardware build](https://youtu.be/7KZyOaOnmCU)
 2. **Download firmware**  → [Latest releases](https://github.com/Kukun7610/Vehicle_CAN_Diagnostic_tool/releases)
 3. **Flash the firmware** → [Flashing steps](docs/HARDWARE_AND_SETUP.md#3-flashing-the-firmware)
 4. **Connect to the vehicle** → [Connecting to the vehicle](docs/HARDWARE_AND_SETUP.md#4-connecting-to-the-vehicle)
@@ -94,7 +101,7 @@ Vehicle_CAN_Diagnostic_tool/
 ├── firmware/
 │   └── VCD_Tool/
 │       └── VCD_Tool_C3.ino        # ESP32-C3 firmware (CAN + Wi-Fi + web dashboard)
-│       └── VCD_Tool_S3.ino        # ESP32-S3 firmware (CAN + Wi-Fi + web dashboard)
+│       └── VCD_Tool_S3.ino        # ESP32-S3 firmware (Under Development)
 ├── docs/
 │   ├── HARDWARE_AND_SETUP.md
 │   ├── VALUES_REFERENCE.md
