@@ -13,7 +13,7 @@
 
 
 
-<img src="docs/images/home-screen.png" alt="VCD Tool dashboard home screen" width="640">
+<img src="https://raw.githubusercontent.com/Kukun7610/Vehicle_CAN_Diagnostic_tool/refs/heads/Cough/docs/images/home-screen.png" alt="VCD Tool dashboard home screen" width="640">
 </div>
 
 
