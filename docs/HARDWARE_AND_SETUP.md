@@ -28,9 +28,9 @@ DIY complete video guide : [VCD Tool Guide: DIY hardware build](https://youtu.be
 
 | Qty | Part | Notes |
 |---|---|---|
-| 1 | **ESP32-C3 Super Mini** HW 466AB development board [Buy Link](https://www.flyrobo.in/esp32-c3-supermini-development-board-wifi-bluetooth-usb-c-soldered) | USB-C, Wi-Fi + Bluetooth. This firmware is written for the C3 pin mapping below |
+| 1 | **ESP32-C3 Super Mini** HW 466AB development board [Buy Link](https://www.flyrobo.in/esp32-c3-supermini-development-board-wifi-bluetooth-usb-c-soldered) Or **ESP32-WROOM 32** 38-Pin Development Board CP2102 Type-C WiFi & Bluetooth [Buy Link](https://www.flyrobo.in/esp32-38-pin-development-board-cp2102-type-c-wifi-and-bluetooth/)  | USB-C, Wi-Fi + Bluetooth. This firmware is written for the C3/WROOM pin mapping below |
 | 1 | **SN65HVD230** CAN bus transceiver module [Buy Link](https://www.flyrobo.in/wcmcu-230-can-bus-module-based-on-sn65hvd230) | 3.3 V device, matches ESP32 logic levels |
-| 4 | Female-to-female jumper wires (≈10 cm) [Buy Link](https://www.flyrobo.in/40pcs_10cm_female_to_female_jumper_cable_wire_for_arduino) | ESP32-C3 ⇄ transceiver |
+| 4 | Female-to-female jumper wires (≈10 cm) [Buy Link](https://www.flyrobo.in/40pcs_10cm_female_to_female_jumper_cable_wire_for_arduino) | ESP32-C3 / WROOM ⇄ transceiver |
 | 2 | Female-to-male jumper wires (≈10 cm) [Buy Link](https://www.flyrobo.in/10cm_male_to_female_jumper_cable_wire_for_arduino) | Transceiver ⇄ vehicle connector |
 | 1 | USB-C cable + power source (Any 5v Charger) | Phone, power bank or PC |
 
@@ -133,7 +133,7 @@ flowchart LR
 > 📌 **TX/RX are crossed by design.** The ESP32's *TX* pin goes to the transceiver's *TX input* (`CTX`) and the ESP32's *RX* pin to the transceiver's *RX output* (`CRX`). Module silk-screens vary (`TXD`/`RXD`, `D`/`R`, `CTX`/`CRX`); match them by function.
 
 ### 1.3 Wiring diagram
- ![Finished wiring](images/wiring-photo.png)
+ ![Finished wiring](images/diagram-wroom-esp32.png)
  
 ```text
         ┌──────────────────────┐                     ┌────────────────────────┐
