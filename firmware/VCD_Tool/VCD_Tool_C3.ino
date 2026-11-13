@@ -489,7 +489,7 @@ const char htmlPage[] PROGMEM =
 "function gridSupportTxt(d,e){\n"
 "  const soc=Number(d.soc), dc=Number(e.dc);\n"
 "  if(!Number.isFinite(soc)||!Number.isFinite(dc)) return undefined;\n"
-"  if(soc>80) return 'Discharge below 80% to calculate';\n"
+"  if(soc>74) return 'Discharge below 80% to calculate';\n"
 "  if(dc>6000) return 'Yes, Full Support';\n"
 "  return 'Partial';\n"
 "}\n"

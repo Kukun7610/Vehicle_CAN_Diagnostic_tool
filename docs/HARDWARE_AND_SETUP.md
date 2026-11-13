@@ -1,6 +1,6 @@
 # 🔧 Hardware & Setup
 
-There are two ways to get a working VCD Tool. Both use the **same hardware**: an ESP32-C3 board plus an SN65HVD230 CAN transceiver.
+There are two ways to get a working VCD Tool. Both use the **same hardware**: an ESP32-C3/WROOM board plus an SN65HVD230 CAN transceiver.
 
 | | Option 1: DIY | Option 2: Pre-built |
 |---|---|---|
@@ -37,6 +37,7 @@ DIY complete video guide : [VCD Tool Guide: DIY hardware build](https://youtu.be
 > ⚠️ **Use only one ESP32-C3 Super Mini HW466AB board.** The sketch uses GPIO 10 (TX) and GPIO 20 (RX). Other ESP32 variants have different pins and require editing `CAN_TX` / `CAN_RX` in the sketch.
 
 ### 1.2 Pin connections
+#### For ESP32-C3
 
 **ESP32-C3 SuperMini ⇄ SN65HVD230**
 
@@ -109,14 +110,90 @@ flowchart LR
     CL --- VL
 ```
 
+ 
+
+#### For ESP32-WROOM
+
+**ESP32-WROOM 32 ⇄ SN65HVD230**
+
+| ESP32-WROOM pin | SN65HVD230 pin | Wire (suggested) | Purpose |
+|---|---|---|---|
+| `3V3` | `3V3` (VCC) | 🔴 Red | Power for transceiver |
+| `GND` | `GND` | ⚫ Black | Common ground |
+| `GPIO 23` | `CTX` (TXD / D) | 🟠 Orange | CAN transmit line |
+| `GPIO 22` | `CRX` (RXD / R) | 🔵 Blue | CAN receive line |
+
+**SN65HVD230 ⇄ Vehicle diagnostic connector**
+
+| SN65HVD230 pin | Vehicle connector | Wire (suggested) |
+|---|---|---|
+| `CANH` | CAN-H pin | 🟡 Yellow |
+| `CANL` | CAN-L pin | 🟢 Green |
+
+> 📌 **TX/RX are crossed by design.** The ESP32's *TX* pin goes to the transceiver's *TX input* (`CTX`) and the ESP32's *RX* pin to the transceiver's *RX output* (`CRX`). Module silk-screens vary (`TXD`/`RXD`, `D`/`R`, `CTX`/`CRX`); match them by function.
+
+### 1.3 Wiring diagram
  ![Finished wiring](images/wiring-photo.png)
+ 
+```text
+        ┌──────────────────────┐                     ┌────────────────────────┐
+        │   ESP32-WROOM        │                     │   SN65HVD230 module    │
+        │                      │                     │                        │
+        │   3V3  ●─────────────┼──────── red ────────┼─● 3V3                  │
+        │   GND  ●─────────────┼──────── black ──────┼─● GND                  │
+        │   GPIO23 (TX) ●──────┼──────── orange ─────┼─● CTX                  │
+        │   GPIO22 (RX) ●──────┼──────── blue  ──────┼─● CRX                  │
+        │                      │                     │                        │
+        │   [USB-C] ← power    │                     │   CANH ●───────────┐   │
+        └──────────────────────┘                     │   CANL ●────────┐  │   │
+                                                     └─────────────────┼──┼───┘
+                                                                       │  │
+                                                 green (CAN-L) ────────┘  │
+                                                  yellow (CAN-H) ─────────┘
+                                                                       │  │
+                                                             ┌─────────▼──▼────────┐
+                                                             │  Vehicle diagnostic │
+                                                             │  connector (boot)   │
+                                                             └─────────────────────┘
+```
+
+```mermaid
+flowchart LR
+    subgraph ESP[ESP32-WROOM 32]
+        A3[3V3]
+        AG[GND]
+        AT[GPIO 23 - TX]
+        AR[GPIO 22 - RX]
+    end
+    subgraph CAN[SN65HVD230]
+        C3[3V3]
+        CG[GND]
+        CT[CTX]
+        CR[CRX]
+        CH[CANH]
+        CL[CANL]
+    end
+    subgraph VEH[Vehicle connector]
+        VH[CAN-H]
+        VL[CAN-L]
+    end
+    A3 --- C3
+    AG --- CG
+    AT --- CT
+    AR --- CR
+    CH --- VH
+    CL --- VL
+```
+
+ ![Finished wiring](images/diagram-wroom-esp32.png)
  ![Vehicle connector pinout](images/connector-pinout.png)
+
 
 ### 1.4 Wiring checklist
 
 - [ ] ESP32 is **unplugged** from USB/power while wiring
 - [ ] `3V3` goes to the transceiver's `3V3` pin, **not 5 V**
-- [ ] `GPIO 10` → `CTX`, `GPIO 20` → `CRX`
+- [ ] For C3`GPIO 10` → `CTX`, `GPIO 20` → `CRX`, For WROOM `GPIO 23` → `CTX`, `GPIO 22` → `CRX`,
 - [ ] CAN-H and CAN-L are not swapped (a swap just means no data, but double-check)
 - [ ] No bare wire ends touching each other
 
@@ -150,12 +227,12 @@ To run **VCD Tool** on it:
 ## 3. Flashing the firmware
 Two way to flash
 ### 3.1 With ESP Flasher
-1. Download the latest `VCD_Tool_C3.bin` file from [Releases](https://github.com/Kukun7610/Vehicle_CAN_Diagnostic_tool/releases)
+1. Download the latest `VCD_Tool_C3.bin` or `VCD_Tool_WROOM32.bin` file from [Releases](https://github.com/Kukun7610/Vehicle_CAN_Diagnostic_tool/releases)
 2. Connect your ESP module to your PC/Laptop via USB.
 3. Open the **ESP Flasher** application.
 4. Select the correct COM/Serial port your ESP32 is connected to.
-5. Select the proper `VCD_Tool_C3.bin` file and click **Flash**.
-6. Wait a minute for the process to complete, then disconnect and reconnect the ESP32-C3 to restart it.
+5. Select the proper ESP32 File `VCD_Tool_C3.bin` for ESP32-C3 & `VCD_Tool_WROOM32.bin` for ESP32-WROOM module file and click **Flash**.
+6. Wait a minute for the process to complete, then disconnect and reconnect the ESP32 to restart it.
 7. On your phone, look for a Wi-Fi network named **`VCD-Tool`**. If it appears, flashing worked ✅.
 
 
@@ -173,20 +250,20 @@ No extra libraries are needed. `WiFi`, `WebServer` and the CAN driver (`driver/t
 
 ### 3.2.2 Open and configure the sketch
 
-1. Download the latest `VCD_Tool_C3.ino` file from [Releases](https://github.com/Kukun7610/Vehicle_CAN_Diagnostic_tool/releases).
-2. Open `VCD_Tool_C3.ino` in the Arduino IDE.
+1. Download the latest `VCD_Tool_C3.ino` or `VCD_Tool_WROOM32.ino` file from [Releases](https://github.com/Kukun7610/Vehicle_CAN_Diagnostic_tool/releases).
+2. Open `VCD_Tool_C3.ino` or `VCD_Tool_WROOM32.ino` in the Arduino IDE.
 3. Select the board settings:
 
    | Setting | Value |
    |---|---|
-   | Board | **ESP32C3 Dev Module** |
+   | Board | **ESP32C3 Dev Module** for C3 or **ESP32 Dev Module** for WROOM |
    | USB CDC On Boot | **Enabled** (needed to see Serial output on the SuperMini) |
    | Upload Speed | 921600 (use 115200 if uploads fail) |
    | Port | The `COM X` / `/dev/tty` port of your board |
 
 ### 3.2.3 Upload
 
-1. Connect the ESP32-C3 to your computer with a USB-C **data** cable (not charge-only).
+1. Connect the ESP32-C3/WROOM 32 to your computer with a USB-C **data** cable (not charge-only).
 2. Click **Upload** (→). Wait for *"Hard resetting via RTS pin…"*.
 3. If upload fails to start, hold **BOOT**, tap **RESET**, release **BOOT**, then upload again.
 4. Unplug and re-plug the board.
@@ -202,7 +279,7 @@ No extra libraries are needed. `WiFi`, `WebServer` and the CAN driver (`driver/t
 1. Open the vehicle's boot / under-seat storage.
 2. Locate the diagnostic connector behind the small black cover and remove the cover.
 3. Plug in your device (pre-built) or connect your CAN-H / CAN-L wires (DIY) to the matching pins.
-4. Power the ESP32-C3 from a USB power bank, a phone, or a PC.
+4. Power the ESP32-C3/WROOM from a USB power bank, a phone, or a PC.
 5. Switch the vehicle on.
 
 ![Connector location](images/connector-location.png)

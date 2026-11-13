@@ -6,6 +6,7 @@
 **VCD Tool is an ESP32-based Ather vehicle CAN diagnostic dashboard. It presents available vehicle, battery, motor/controller, charger, firmware, and thermal telemetry from the connected vehicle. Displayed values depend on the signals decoded by the firmware.**
 
 ![Platform](https://img.shields.io/badge/platform-ESP32--C3-blue)
+![Platform](https://img.shields.io/badge/Platform-ESP32-blue)
 ![Framework](https://img.shields.io/badge/framework-Arduino-00979D)
 ![Bus](https://img.shields.io/badge/CAN-500%20kbit%2Fs-orange)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green)
@@ -41,7 +42,7 @@
 
 ## 🔍 Overview
 
-The ESP32-C3 connects to the vehicle's CAN bus through a CAN transceiver, decodes the frames it receives, and hosts a mobile-friendly dashboard over its own Wi-Fi hotspot. No internet, no app install, no phone pairing: join the hotspot, open a browser, and read your vehicle's data live.
+The ESP32 connects to the vehicle's CAN bus through a CAN transceiver, decodes the frames it receives, and hosts a mobile-friendly dashboard over its own Wi-Fi hotspot. No internet, no app install, no phone pairing: join the hotspot, open a browser, and read your vehicle's data live.
 
 > **Note:** Only signals that the firmware can decode are shown. Some values are marked **Estimated**, **Hypothesis** or **Rarely seen** on the dashboard because their meaning is not fully confirmed or they are broadcast only occasionally.
 
@@ -100,7 +101,8 @@ Vehicle_CAN_Diagnostic_tool/
 ├── README.md
 ├── firmware/
 │   └── VCD_Tool/
-│       └── VCD_Tool_C3.ino        # ESP32-C3 firmware (CAN + Wi-Fi + web dashboard)
+│       └── VCD_Tool_C3.ino        # ESP32-C3 firmware (CAN + Wi-Fi + web dashboard + Android app)
+│       └── VCD_Tool_WROOM32.ino   # ESP32-WROOM firmware (CAN + Wi-Fi + web dashboard + Android app)
 │       └── VCD_Tool_S3.ino        # ESP32-S3 firmware (Under Development)
 ├── docs/
 │   ├── HARDWARE_AND_SETUP.md
@@ -121,7 +123,7 @@ Vehicle_CAN_Diagnostic_tool/
 ```mermaid
 flowchart LR
     V[Vehicle CAN bus<br/>500 kbit/s] --> T[CAN transceiver<br/>SN65HVD230]
-    T --> E[ESP32-C3/S3<br/>TWAI controller]
+    T --> E[ESP32-C3/S3/WROOM<br/>TWAI controller]
     E --> D[Decoder task<br/>core 0]
     D --> S[(Shared snapshot<br/>mutex-protected)]
     S --> W[Web server<br/>/data /cells /charger /extra]
