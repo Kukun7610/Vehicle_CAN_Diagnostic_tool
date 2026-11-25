@@ -27,6 +27,10 @@ struct Telemetry {
   uint32_t chargerOV;
   uint32_t chargerOI;
   uint32_t chargerIV;
+  uint8_t chaMode, chaAckNack, chaNackReason, chaFWVer, chaDoCV, chaStopCharging;
+  uint32_t chaUID;
+  uint16_t chaIref;
+  bool chaModeSeen, chaUIDSeen, chaAuthSeen, chaNackSeen, chaFWSeen, chaIrefSeen, chaDoCVSeen, chaStopSeen;
   int16_t  motorI;
   int16_t  motorTemp;
   bool     displayFan;
@@ -375,7 +379,7 @@ const char htmlPage[] PROGMEM =
 "  ],\n"
 "  charger: [\n"
 "    {title:'Charging & power delivery', symbol:'⚡', accent:'#b38a16', fields:[\n"
-"      ['Charger input voltage (AC)','🔌','—','V'],['Charger output voltage (DC)','⚡','—','V'],['Charger output current','〰️','—','A'],['Calculated power','📊','—','W','estimated'],['Charger connected','🔗','—',''],['Charger fan speeds','🌀','—','RPM'],['Charge SoC limit','🔋','—','%'],['PDU voltage','⚡','—','V']\n"
+"      ['Charging Mode','⚙️','—',''],['Unique ID Charger','🆔','—',''],['Authenticated','🔐','—',''],['NAK Reason','⚠️','—',''],['Charger FW Version','💾','—',''],['Input Reference','〰️','—','A'],['Do CV','🔋','—',''],['Stop charging','⏹️','—',''],['Charger input voltage (AC)','🔌','—','V'],['Charger output voltage (DC)','⚡','—','V'],['Charger output current','〰️','—','A'],['Calculated power','📊','—','W','estimated'],['Charger connected','🔗','—',''],['Charger fan speeds','🌀','—','RPM'],['Charge SoC limit','🔋','—','%'],['PDU voltage','⚡','—','V']\n"
 "    ]},\n"
 "    {title:'6 kW grid support', symbol:'⛽', accent:'#b38a16', fields:[\n"
 "      ['Grid support capability','⚡','—',''],['Support level','📊','—','']\n"
@@ -489,7 +493,7 @@ const char htmlPage[] PROGMEM =
 "function gridSupportTxt(d,e){\n"
 "  const soc=Number(d.soc), dc=Number(e.dc);\n"
 "  if(!Number.isFinite(soc)||!Number.isFinite(dc)) return undefined;\n"
-"  if(soc>74) return 'Discharge below 80% to calculate';\n"
+"  if(soc>80) return 'Discharge below 80% to calculate';\n"
 "  if(dc>6000) return 'Yes, Full Support';\n"
 "  return 'Partial';\n"
 "}\n"
@@ -549,6 +553,14 @@ const char htmlPage[] PROGMEM =
 " 'Controller temperature':e.ctemp!==undefined?f(e.ctemp)+' °C':undefined,'Motor MCU temperature':e.mcutemp!==undefined?f(e.mcutemp)+' °C':undefined,\n"
 " 'Throttle':e.tho!==undefined?f(e.tho)+' %':undefined,\n"
 " 'Traction-control RPM':e.tcrpm,'Motor RPM (motor-control, not wheel speed)':SI.motorRpmAbs===null?undefined:(f(SI.motorRpmAbs,0)+' RPM'+(SI.mcDir?' ('+SI.mcDir+')':'')),'Speed (odometer, 5 s avg)':SI.kmh===null?undefined:f(SI.kmh,0)+' km/h','Direction':SI.dir===null?undefined:(SI.dir==='moving'?'Moving (direction not determined)':SI.dir.charAt(0).toUpperCase()+SI.dir.slice(1)),'Motor firmware':ver(e.mfw),\n"
+" 'Charging Mode':ch.chaMode!==undefined?String(ch.chaMode):undefined,\n"
+" 'Unique ID Charger':ch.chaUID!==undefined?String(ch.chaUID):undefined,\n"
+" 'Authenticated':ch.chaAckNack!==undefined?(Number(ch.chaAckNack)===0?'No':Number(ch.chaAckNack)===1?'Yes':String(ch.chaAckNack)):undefined,\n"
+" 'NAK Reason':ch.chaNackReason!==undefined?String(ch.chaNackReason):undefined,\n"
+" 'Charger FW Version':ch.chaFWVer!==undefined?String(ch.chaFWVer):undefined,\n"
+" 'Input Reference':ch.chaIref!==undefined?f(Number(ch.chaIref)/100,2)+' A':undefined,\n"
+" 'Do CV':ch.chaDoCV!==undefined?sw(ch.chaDoCV,'Yes','No'):undefined,\n"
+" 'Stop charging':ch.chaStopChg!==undefined?(Number(ch.chaStopChg)===0?'No':'Yes'):undefined,\n"
 " 'Charger input voltage (AC)':ch.cinv!==undefined?V(ch.cinv,3):undefined,\n"
 " 'Charger output voltage (DC)':ch.coutv!==undefined?V(ch.coutv,3):undefined,\n"
 " 'Charger output current':ch.couti!==undefined?f(ch.couti,3)+' A':undefined,\n"
@@ -930,6 +942,7 @@ const char htmlPage[] PROGMEM =
 "  cellTemps:temps.map(n=>n/100),afeDieTemp:tv(x.die),bmsAmbient:tv(x.amb),humidity:diagNum(x.hum)===null?null:Number(x.hum)/100,boardTempRefV:diagNum(x.btr)===null?null:Number(x.btr)/1000,vref2:diagNum(x.vr2)===null?null:Number(x.vr2)/10000,vref3:diagNum(x.vr3)===null?null:Number(x.vr3)/10000,mosfetPowerVoltage:diagNum(x.mos)===null?null:Number(x.mos)/1000,afeRegulator:diagNum(x.vreg)===null?null:Number(x.vreg)/1000,pduVoltage:diagNum(x.pdu)===null?null:Number(x.pdu)/1000,\n"
 "  deratedDischarge:diagNum(x.dd)===null?null:Number(x.dd)/100,deratedCharge:diagNum(x.dc)===null?null:Number(x.dc)/100,deratedRegen:diagNum(x.dr)===null?null:Number(x.dr)/100,dischargeLimitTemp:diagNum(x.dl)===null?null:Number(x.dl)/100,\n"
 "  motorCurrent:ch.mbi,motorTemp:ch.mt,controllerTemp:x.ctemp,motorMcuTemp:x.mcutemp,throttleOut:x.tho,throttle1:x.th1,throttle3:x.th3,mcRpm:x.mcrpm,speedKmh:SI.kmh===null?null:Math.round(SI.kmh*10)/10,direction:SI.dir,motorRpmAbs:SI.motorRpmAbs,\n"
+"  chargerMode:ch.chaMode,chargerUID:ch.chaUID,chargerAuthenticated:ch.chaAckNack===undefined||ch.chaAckNack===null?null:(Number(ch.chaAckNack)===0?'No':Number(ch.chaAckNack)===1?'Yes':String(ch.chaAckNack)),chargerNackReason:ch.chaNackReason,chargerFWVersion:ch.chaFWVer,chargerIref:ch.chaIref===undefined||ch.chaIref===null?null:Number(ch.chaIref)/100,chargerDoCV:ch.chaDoCV===undefined||ch.chaDoCV===null?null:(ch.chaDoCV?'Yes':'No'),chargerStopCharging:ch.chaStopChg===undefined||ch.chaStopChg===null?null:(Number(ch.chaStopChg)===0?'No':'Yes'),\n"
 "  chargerConnected:ch.cconnected,chargerInputVoltage:ch.cinv,chargerOutputVoltage:ch.coutv,chargerOutputCurrent:ch.couti,chargerPower:ch.watts,chargerFan1:ch.fan1,chargerFan2:ch.fan2,chargerLock1:ch.clock1,chargerLock2:ch.clock2,seatLock:ch.seat,chargeSocLimit:diagNum(x.chglim)===null?null:Number(x.chglim)/100,chargeCellRule:diagNum(x.cr)===null?null:Number(x.cr)/100,chargeCommandRateLimit:diagNum(x.crl)===null?null:Number(x.crl)/100,chargePostQuant:diagNum(x.cpq)===null?null:Number(x.cpq)/100,\n"
 "  ax:x.ax,ay:x.ay,az:x.az,roll:diagNum(x.er)===null?null:Number(x.er)/10000,pitch:diagNum(x.ep)===null?null:Number(x.ep)/10000,heading:diagNum(x.eh)===null?null:Number(x.eh)/10000\n"
 " };\n"
@@ -946,11 +959,11 @@ const char htmlPage[] PROGMEM =
 " if(id==='activity') return ['fbrake','rbrake','hbeam','start','kill','storage','horn','indl','indr','indc','key','stand','dfan','feco','seco','mode','speedKmh','odo','bmsUptime','canAgeMs','diagAgeMs','vinAgeMs','sidAgeMs','navJoystick','parkAssistA','parkAssistB'];\n"
 " if(id==='battery') return ['soc','socEkf','soe','soh','deltaSoc','maxSoc','packVoltage','packCurrent','cellVoltageMin','cellVoltageMax','cellVoltageSpread','weakestCellIndex','strongestCellIndex','imbalance','balancing','cellSohMin','cellSohMax','cellSocMin','cellSocMax','cellTempMin','cellTempMax','cellTempDelta','afeDieTemp','bmsAmbient','humidity','deratedDischarge','deratedCharge','deratedRegen','dischargeLimitTemp','vref2','vref3','mosfetPowerVoltage','afeRegulator','pduVoltage','chargeSocLimit','dashboardSocEstimate'];\n"
 " if(id==='motor') return ['mcRpm','motorCurrent','packCurrent','motorTemp','controllerTemp','motorMcuTemp','throttleOut','throttle1','throttle3','deratedDischarge','deratedRegen','soc','packVoltage','odo'];\n"
-" if(id==='charger') return ['chargerConnected','chargerLock1','chargerLock2','seatLock','chargerInputVoltage','chargerOutputVoltage','chargerOutputCurrent','chargerPower','chargerFan1','chargerFan2','balancing','chargeSocLimit','deratedCharge','chargeCellRule','chargeCommandRateLimit','chargePostQuant','packVoltage','cellVoltageSpread','cellTempMin','cellTempMax','soc','dashboardSocEstimate'];\n"
+" if(id==='charger') return ['chargerMode','chargerUID','chargerAuthenticated','chargerNackReason','chargerFWVersion','chargerIref','chargerDoCV','chargerStopCharging','chargerConnected','chargerLock1','chargerLock2','seatLock','chargerInputVoltage','chargerOutputVoltage','chargerOutputCurrent','chargerPower','chargerFan1','chargerFan2','balancing','chargeSocLimit','deratedCharge','chargeCellRule','chargeCommandRateLimit','chargePostQuant','packVoltage','cellVoltageSpread','cellTempMin','cellTempMax','soc','dashboardSocEstimate'];\n"
 " return ['throttleOut','throttle1','throttle3','motorCurrent','packCurrent','packVoltage','soc','motorTemp','controllerTemp','motorMcuTemp','cellTempMin','cellTempMax','ax','ay','az','pitch','roll','odo','mode','fbrake','rbrake','speedKmh','direction','dashboardSocEstimate','chargeSocLimit'];\n"
 "}\n"
 "function diagFieldLabel(k){\n"
-" return ({soc:'SoC - BMS raw (%)',soh:'Reported SoH (%)',socEkf:'SoC - EKF estimate',soe:'SoE - State of Energy',deltaSoc:'Delta SoC',maxSoc:'Max SoC - BMS',packVoltage:'Pack voltage (V)',packCurrent:'Pack current',cellVoltageMin:'Cell voltage min (V)',cellVoltageMax:'Cell voltage max (V)',cellVoltageSpread:'Cell spread (V)',weakestCellIndex:'Weakest cell #',strongestCellIndex:'Strongest cell #',cellTempMin:'Cell temp min',cellTempMax:'Cell temp max',cellTempDelta:'Cell temp delta',afeDieTemp:'AFE die temp',bmsAmbient:'BMS ambient',humidity:'Humidity',deratedDischarge:'Derated discharge limit',deratedCharge:'Derated charge limit',deratedRegen:'Derated regen limit',dischargeLimitTemp:'Temp-based discharge limit (A)',vref2:'VREF2',vref3:'VREF3',mosfetPowerVoltage:'MOSFET power voltage',afeRegulator:'AFE regulator',pduVoltage:'PDU voltage',mcRpm:'Motor RPM (motor-control, raw signed, not wheel speed)',speedKmh:'Speed (km/h, odometer-based)',direction:'Direction',motorRpmAbs:'Motor RPM (magnitude, not wheel speed)',dashboardSocEstimate:'SoC - dashboard (ESTIMATE)',motorCurrent:'Motor current',motorTemp:'Motor temp',controllerTemp:'Controller temp',motorMcuTemp:'Motor MCU temp',throttleOut:'Throttle output',throttle1:'Throttle 1',throttle3:'Throttle 3',chargerConnected:'Charger connected',chargerInputVoltage:'Input voltage',chargerOutputVoltage:'Output voltage',chargerOutputCurrent:'Output current',chargerPower:'Charger power',chargerFan1:'Charger fan 1',chargerFan2:'Charger fan 2',chargerLock1:'Charger lock 1',chargerLock2:'Charger lock 2',seatLock:'Seat lock',chargeSocLimit:'Charge SoC limit',chargeCellRule:'Charge cell rule',chargeCommandRateLimit:'Charge command rate limit',chargePostQuant:'Charge post quant',cellVoltageSpread:'Cell voltage spread',ax:'IMU acceleration X',ay:'IMU acceleration Y',az:'IMU acceleration Z',pitch:'Pitch',roll:'Roll',odo:'Odometer',bmsUptime:'BMS uptime',canAgeMs:'CAN age (ms)',diagAgeMs:'Diagnostic age (ms)',vinAgeMs:'VIN age (ms)',sidAgeMs:'Scooter ID age (ms)',navJoystick:'Navigation joystick',parkAssistA:'Park assist A',parkAssistB:'Park assist B',mode:'Drive mode',fbrake:'Front brake',rbrake:'Rear brake',hbeam:'High beam',start:'Start switch',kill:'Kill switch',storage:'Storage switch',horn:'Horn',indl:'Left indicator',indr:'Right indicator',indc:'Center indicator',key:'Key ON',stand:'Side stand',dfan:'Display fan',feco:'Forced ECO',seco:'Smart ECO',imbalance:'Cell imbalance',balancing:'Balancing state',cellSohMin:'Lowest cell SoH',cellSohMax:'Highest cell SoH',cellSocMin:'Lowest cell SoC',cellSocMax:'Highest cell SoC'})[k]||k;\n"
+" return ({soc:'SoC - BMS raw (%)',soh:'Reported SoH (%)',socEkf:'SoC - EKF estimate',soe:'SoE - State of Energy',deltaSoc:'Delta SoC',maxSoc:'Max SoC - BMS',packVoltage:'Pack voltage (V)',packCurrent:'Pack current',cellVoltageMin:'Cell voltage min (V)',cellVoltageMax:'Cell voltage max (V)',cellVoltageSpread:'Cell spread (V)',weakestCellIndex:'Weakest cell #',strongestCellIndex:'Strongest cell #',cellTempMin:'Cell temp min',cellTempMax:'Cell temp max',cellTempDelta:'Cell temp delta',afeDieTemp:'AFE die temp',bmsAmbient:'BMS ambient',humidity:'Humidity',deratedDischarge:'Derated discharge limit',deratedCharge:'Derated charge limit',deratedRegen:'Derated regen limit',dischargeLimitTemp:'Temp-based discharge limit (A)',vref2:'VREF2',vref3:'VREF3',mosfetPowerVoltage:'MOSFET power voltage',afeRegulator:'AFE regulator',pduVoltage:'PDU voltage',mcRpm:'Motor RPM (motor-control, raw signed, not wheel speed)',speedKmh:'Speed (km/h, odometer-based)',direction:'Direction',motorRpmAbs:'Motor RPM (magnitude, not wheel speed)',dashboardSocEstimate:'SoC - dashboard (ESTIMATE)',motorCurrent:'Motor current',motorTemp:'Motor temp',controllerTemp:'Controller temp',motorMcuTemp:'Motor MCU temp',throttleOut:'Throttle output',throttle1:'Throttle 1',throttle3:'Throttle 3',chargerMode:'Charging Mode',chargerUID:'Unique ID Charger',chargerAuthenticated:'Authenticated',chargerNackReason:'NAK Reason',chargerFWVersion:'Charger FW Version',chargerIref:'Input Reference',chargerDoCV:'Do CV',chargerStopCharging:'Stop charging',chargerConnected:'Charger connected',chargerInputVoltage:'Input voltage',chargerOutputVoltage:'Output voltage',chargerOutputCurrent:'Output current',chargerPower:'Charger power',chargerFan1:'Charger fan 1',chargerFan2:'Charger fan 2',chargerLock1:'Charger lock 1',chargerLock2:'Charger lock 2',seatLock:'Seat lock',chargeSocLimit:'Charge SoC limit',chargeCellRule:'Charge cell rule',chargeCommandRateLimit:'Charge command rate limit',chargePostQuant:'Charge post quant',cellVoltageSpread:'Cell voltage spread',ax:'IMU acceleration X',ay:'IMU acceleration Y',az:'IMU acceleration Z',pitch:'Pitch',roll:'Roll',odo:'Odometer',bmsUptime:'BMS uptime',canAgeMs:'CAN age (ms)',diagAgeMs:'Diagnostic age (ms)',vinAgeMs:'VIN age (ms)',sidAgeMs:'Scooter ID age (ms)',navJoystick:'Navigation joystick',parkAssistA:'Park assist A',parkAssistB:'Park assist B',mode:'Drive mode',fbrake:'Front brake',rbrake:'Rear brake',hbeam:'High beam',start:'Start switch',kill:'Kill switch',storage:'Storage switch',horn:'Horn',indl:'Left indicator',indr:'Right indicator',indc:'Center indicator',key:'Key ON',stand:'Side stand',dfan:'Display fan',feco:'Forced ECO',seco:'Smart ECO',imbalance:'Cell imbalance',balancing:'Balancing state',cellSohMin:'Lowest cell SoH',cellSohMax:'Highest cell SoH',cellSocMin:'Lowest cell SoC',cellSocMax:'Highest cell SoC'})[k]||k;\n"
 "}\n"
 "function diagRenderMetrics(){\n"
 " const root=document.getElementById('diagMetrics');\n"
@@ -960,7 +973,7 @@ const char htmlPage[] PROGMEM =
 "  let value=v[k]; let unit='';\n"
 "  if(['soc','soh','socEkf','soe','deltaSoc','maxSoc','humidity','chargeSocLimit','cellSohMin','cellSohMax','cellSocMin','cellSocMax','dashboardSocEstimate'].includes(k))unit='%';\n"
 "  if(['packVoltage','cellVoltageMin','cellVoltageMax','cellVoltageSpread','imbalance','chargerInputVoltage','chargerOutputVoltage','pduVoltage'].includes(k))unit=' V';\n"
-"  if(['motorTemp','controllerTemp','motorMcuTemp','cellTempMin','cellTempMax','cellTempDelta','afeDieTemp','bmsAmbient','dischargeLimitTemp'].includes(k))unit=' °C';\n"
+"  if(k==='chargerIref')unit=' A';\n  if(['motorTemp','controllerTemp','motorMcuTemp','cellTempMin','cellTempMax','cellTempDelta','afeDieTemp','bmsAmbient','dischargeLimitTemp'].includes(k))unit=' °C';\n"
 "  if(k==='canAgeMs'||k==='diagAgeMs'||k==='vinAgeMs'||k==='sidAgeMs')unit=' ms';\n"
 "  if(k==='odo')unit=' km';if(k==='speedKmh')unit=' km/h';if(k==='motorRpmAbs')unit=' RPM';\n"
 "  if(typeof value==='boolean')value=value?'Active':'Inactive';\n"
@@ -1364,26 +1377,56 @@ void handleCells(){
   server.send(200,"application/json",cellBuf);
 }
 
-char chargerBuf[384];
+char chargerBuf[768];
 void handleCharger(){
   xSemaphoreTake(mtx, portMAX_DELAY);
   Telemetry t = snap;
   xSemaphoreGive(mtx);
+
   const int32_t motorI=t.motorI;
   const int32_t motorMag=motorI<0?-motorI:motorI;
   const char *motorSign=motorI<0?"-":"";
   const uint64_t powerProduct=(uint64_t)t.chargerOV*(uint64_t)t.chargerOI;
   const uint32_t wattsWhole=(uint32_t)(powerProduct/1000000ULL);
   const unsigned wattsFrac=(unsigned)((powerProduct%1000000ULL)/10000ULL);
-  snprintf(chargerBuf,sizeof(chargerBuf),
-    "{\"coutv\":%d.%03d,\"couti\":%d.%03d,\"cinv\":%d.%03d,\"mbi\":%s%d.%01d,\"mt\":%d,\"bal\":%d,\"watts\":%u.%02u,\"fan1\":%d,\"fan2\":%d,\"cconnected\":%s,\"seat\":%s,\"clock1\":%s,\"clock2\":%s}",
+
+  // Build optional charger values as complete JSON tokens.
+  // This prevents invalid output such as "chaMode":null,0 when unseen.
+  char jMode[16], jUID[24], jAuth[16], jNak[16], jFW[16];
+  char jIref[16], jDoCV[8], jStop[16];
+
+  if(t.chaModeSeen) snprintf(jMode,sizeof(jMode),"%u",(unsigned)t.chaMode);
+  else strcpy(jMode,"null");
+  if(t.chaUIDSeen) snprintf(jUID,sizeof(jUID),"%lu",(unsigned long)t.chaUID);
+  else strcpy(jUID,"null");
+  if(t.chaAuthSeen) snprintf(jAuth,sizeof(jAuth),"%u",(unsigned)t.chaAckNack);
+  else strcpy(jAuth,"null");
+  if(t.chaNackSeen) snprintf(jNak,sizeof(jNak),"%u",(unsigned)t.chaNackReason);
+  else strcpy(jNak,"null");
+  if(t.chaFWSeen) snprintf(jFW,sizeof(jFW),"%u",(unsigned)t.chaFWVer);
+  else strcpy(jFW,"null");
+  if(t.chaIrefSeen) snprintf(jIref,sizeof(jIref),"%u",(unsigned)t.chaIref);
+  else strcpy(jIref,"null");
+  if(t.chaDoCVSeen) strcpy(jDoCV,t.chaDoCV?"true":"false");
+  else strcpy(jDoCV,"null");
+  if(t.chaStopSeen) snprintf(jStop,sizeof(jStop),"%u",(unsigned)t.chaStopCharging);
+  else strcpy(jStop,"null");
+
+  int n=snprintf(chargerBuf,sizeof(chargerBuf),
+    "{\"coutv\":%d.%03d,\"couti\":%d.%03d,\"cinv\":%d.%03d,\"mbi\":%s%d.%01d,\"mt\":%d,\"bal\":%d,\"watts\":%u.%02u,\"fan1\":%d,\"fan2\":%d,\"cconnected\":%s,\"seat\":%s,\"clock1\":%s,\"clock2\":%s,\"chaMode\":%s,\"chaUID\":%s,\"chaAckNack\":%s,\"chaNackReason\":%s,\"chaFWVer\":%s,\"chaIref\":%s,\"chaDoCV\":%s,\"chaStopChg\":%s}",
     (int)(t.chargerOV/1000),abs((int)(t.chargerOV%1000)),
     (int)(t.chargerOI/1000),abs((int)(t.chargerOI%1000)),
     (int)(t.chargerIV/1000),abs((int)(t.chargerIV%1000)),
     motorSign,(int)(motorMag/10),abs((int)(motorMag%10)),
     (int)t.motorTemp, t.balancing, wattsWhole, wattsFrac,
     t.chargerFan1, t.chargerFan2,
-    t.chargerConnected?"true":"false",t.seatLock?"true":"false",t.chargerLock1?"true":"false",t.chargerLock2?"true":"false");
+    t.chargerConnected?"true":"false",t.seatLock?"true":"false",t.chargerLock1?"true":"false",t.chargerLock2?"true":"false",
+    jMode,jUID,jAuth,jNak,jFW,jIref,jDoCV,jStop);
+
+  if(n<0 || n>=(int)sizeof(chargerBuf)){
+    server.send(500,"application/json","{}");
+    return;
+  }
   server.send(200,"application/json",chargerBuf);
 }
 
@@ -1445,6 +1488,30 @@ void IRAM_ATTR applyFrame(Telemetry &t, const twai_message_t &m){
   if(m.extd||m.rtr) return;
   const uint8_t *d=m.data;
   switch(m.identifier){
+    // Charger fields mapped from CAN-v5.6-parser-split-fixed.
+    case 0x190:
+      if(m.data_length_code<8)return;
+      t.chaMode=d[0];
+      t.chaUID=(uint32_t)d[5]|((uint32_t)d[6]<<8)|((uint32_t)d[7]<<16);
+      t.chaModeSeen=true; t.chaUIDSeen=true;
+      break;
+    case 0x460:
+      if(m.data_length_code<5)return;
+      t.chaAckNack=d[2]; t.chaNackReason=d[3]; t.chaFWVer=d[4];
+      t.chaAuthSeen=true; t.chaNackSeen=true; t.chaFWSeen=true;
+      break;
+    case 0x420:
+      if(m.data_length_code<2)return;
+      t.chaIref=(uint16_t)d[0]|((uint16_t)d[1]<<8); t.chaIrefSeen=true;
+      break;
+    case 0x421:
+      if(m.data_length_code<1)return;
+      t.chaDoCV=1; t.chaDoCVSeen=true;
+      break;
+    case 0x422:
+      if(m.data_length_code<1)return;
+      t.chaStopCharging=d[0]; t.chaStopSeen=true;
+      break;
     case 0x131: if(m.data_length_code<6)return; t.soc=d[4]+(d[5]<<8); t.balancing=((d[2]>>4)|((d[3]&0x0F)<<4))&1; t.chargerConnected=((d[2]>>6)&1); break;
     case 0x14D: if(m.data_length_code<6)return; t.soh=d[4]+(d[5]<<8); break;
     case 0x13D: if(m.data_length_code<6)return; t.deltaSoc=d[4]+(d[5]<<8); break;
