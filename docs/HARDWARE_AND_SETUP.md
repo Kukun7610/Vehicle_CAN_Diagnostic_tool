@@ -28,10 +28,14 @@ DIY complete video guide : [VCD Tool Guide: DIY hardware build](https://youtu.be
 
 | Qty | Part | Notes |
 |---|---|---|
-| 1 | **ESP32-C3 Super Mini** HW 466AB development board [Buy Link](https://www.flyrobo.in/esp32-c3-supermini-development-board-wifi-bluetooth-usb-c-soldered) Or **ESP32-WROOM 32** 38-Pin Development Board CP2102 Type-C WiFi & Bluetooth [Buy Link](https://www.flyrobo.in/esp32-38-pin-development-board-cp2102-type-c-wifi-and-bluetooth/)  | USB-C, Wi-Fi + Bluetooth. This firmware is written for the C3/WROOM pin mapping below |
-| 1 | **SN65HVD230** CAN bus transceiver module [Buy Link](https://www.flyrobo.in/wcmcu-230-can-bus-module-based-on-sn65hvd230) | 3.3 V device, matches ESP32 logic levels |
-| 4 | Female-to-female jumper wires (≈10 cm) [Buy Link](https://www.flyrobo.in/40pcs_10cm_female_to_female_jumper_cable_wire_for_arduino) | ESP32-C3 / WROOM ⇄ transceiver |
-| 2 | Female-to-male jumper wires (≈10 cm) [Buy Link](https://www.flyrobo.in/10cm_male_to_female_jumper_cable_wire_for_arduino) | Transceiver ⇄ vehicle connector |
+| 1 | **ESP32-C3 Super Mini** HW 466AB development board [Buy Link](https://www.flyrobo.in/esp32-c3-super-mini-development-board-with-4mb-flash?tracking=uD5akSMCnk2wrH3v8xUQ95xShNEslxQ1L4Dzx5UPEzlfhJZl9ZtyWTFAKcVb5GHd
+) Or **ESP32-WROOM 32** 38-Pin Development Board CP2102 Type-C WiFi & Bluetooth [Buy Link](https://www.flyrobo.in/esp32-38-pin-development-board-cp2102-type-c-wifi-and-bluetooth?tracking=uD5akSMCnk2wrH3v8xUQ95xShNEslxQ1L4Dzx5UPEzlfhJZl9ZtyWTFAKcVb5GHd
+)  | USB-C, Wi-Fi + Bluetooth. This firmware is written for the C3/WROOM pin mapping below |
+| 1 | **SN65HVD230** CAN bus transceiver module [Buy Link]([https://www.flyrobo.in/wcmcu-230-can-bus-module-based-on-sn65hvd230](https://www.flyrobo.in/wcmcu-230-can-bus-module-based-on-sn65hvd230?tracking=uD5akSMCnk2wrH3v8xUQ95xShNEslxQ1L4Dzx5UPEzlfhJZl9ZtyWTFAKcVb5GHd
+)) | 3.3 V device, matches ESP32 logic levels |
+| 4 | Female-to-female jumper wires (≈10 cm) [Buy Link]([https://www.flyrobo.in/40pcs_10cm_female_to_female_jumper_cable_wire_for_arduino](https://www.flyrobo.in/40pcs_10cm_female_to_female_jumper_cable_wire_for_arduino?tracking=uD5akSMCnk2wrH3v8xUQ95xShNEslxQ1L4Dzx5UPEzlfhJZl9ZtyWTFAKcVb5GHd
+)) | ESP32-C3 / WROOM ⇄ transceiver |
+| 2 | Female-to-male jumper wires (≈10 cm) [Buy Link]([https://www.flyrobo.in/10cm_male_to_female_jumper_cable_wire_for_arduino](https://www.flyrobo.in/10cm_male_to_female_jumper_cable_wire_for_arduino?tracking=uD5akSMCnk2wrH3v8xUQ95xShNEslxQ1L4Dzx5UPEzlfhJZl9ZtyWTFAKcVb5GHd)) | Transceiver ⇄ vehicle connector |
 | 1 | USB-C cable + power source (Any 5v Charger) | Phone, power bank or PC |
 
 > ⚠️ **Use only one ESP32-C3 Super Mini HW466AB board.** The sketch uses GPIO 10 (TX) and GPIO 20 (RX). Other ESP32 variants have different pins and require editing `CAN_TX` / `CAN_RX` in the sketch.
