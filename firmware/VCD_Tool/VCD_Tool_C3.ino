@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <Preferences.h>
+#include <Update.h>
 
 #define CAN_TX 10
 #define CAN_RX 20
@@ -144,6 +145,7 @@ const char htmlPage[] PROGMEM =
 "  .tile:disabled { cursor:not-allowed; opacity:.35; filter:grayscale(1); }\n"
 "  .tile-icon { width:50px; height:50px; border-radius:14px; display:grid; place-items:center; margin:0 auto 9px; }\n"
 "  .tile-icon svg { width:25px; height:25px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }\n"
+"  .tile-icon.update { background:#e2f5e9; color:#167746; }\n"
 "  .tile-label { font-size:13px; line-height:1.25; font-weight:650; display:block; min-height:33px; }\n"
 "  .vehicle { background:#e1eaff; color:#2355b6; } .cells { background:#ddf7e8; color:#167746; }\n"
 "  .bms { background:#f0e3ff; color:#7944a7; } .motor { background:#ffeadb; color:#b94c14; }\n"
@@ -252,7 +254,41 @@ const char htmlPage[] PROGMEM =
 "  }\n"
 "  @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }\n"
 ".about-placeholder-link{color:inherit;text-decoration:underline;opacity:.75;cursor:default}\n"
-".cell-table-wrap{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}\n.cell-table{width:100%;min-width:0;table-layout:fixed;border-collapse:collapse}\n.cell-table th,.cell-table td{padding:7px 4px;overflow-wrap:anywhere;word-break:break-word;font-size:clamp(10px,2.5vw,13px)}\n.cell-table th:first-child,.cell-table td:first-child{width:24%}\n.cell-table th:not(:first-child),.cell-table td:not(:first-child){width:25.33%}\n@media (prefers-color-scheme: dark) {\n    :root {\n      color-scheme: dark;\n      --ink: #edf1f7; --muted: #aab4c3; --line: #3a4352;\n      --page: #141922; --card: #202734;\n    }\n    body { background:var(--page); color:var(--ink); }\n    .tile:hover:not(:disabled), .tile:focus-visible:not(:disabled) { background:#252e3c; outline-color:#536b9e; }\n    .data-connection, .cell-table-wrap, .about-link-row { background:#202734; color:var(--ink); }\n    .detail-head { background:#202734; color:var(--ink); border-bottom:1px solid var(--line); }\n    .metric, .telemetry-item { background:#202734; border-color:#3a4352; box-shadow:none; }\n    .telemetry-item { background:linear-gradient(145deg,#222b39,#1c232f); }\n    .telemetry-label { color:#b7c1d0; }\n    .telemetry-value { color:#f1f4f9; }\n    .telemetry-unit { color:#aab4c3; }\n    .field-tag { background:#303a4a; color:#c4cedc; }\n    .field-tag.estimated { background:#493b1d; color:#f2cf75; }\n    .field-tag.hypothesis { background:#3b2b50; color:#d7b7ff; }\n    .field-tag.rarely-seen { background:#263c5d; color:#b8d2ff; }\n    .cell-table th { background:#2b3545; color:#d5deeb; }\n    .cell-table td { border-top-color:#394252; }\n    .cell-table tbody tr:nth-child(even) { background:#1b222d; }\n    .cell-name { color:#9dbaff; }\n    .group-title .group-symbol, .about-link-icon { background:#303a4a; color:#dce5f3; }\n    .about-hero { background:linear-gradient(135deg,#27334b,#252c3b 55%,#1d3934); }\n    .about-link-placeholder { background:#303846; color:#c1cad7; }\n    .empty-state { background:#20273480; border-color:#465165; }\n    .detail-body > .prototype-note { background:#382f1d; color:#e8d29b; }\n    .scooter-placeholder { background:linear-gradient(145deg,rgba(160,180,205,.12),rgba(160,180,205,.04)); }\n  }\n"
+".cell-table-wrap{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}\n"
+".cell-table{width:100%;min-width:0;table-layout:fixed;border-collapse:collapse}\n"
+".cell-table th,.cell-table td{padding:7px 4px;overflow-wrap:anywhere;word-break:break-word;font-size:clamp(10px,2.5vw,13px)}\n"
+".cell-table th:first-child,.cell-table td:first-child{width:24%}\n"
+".cell-table th:not(:first-child),.cell-table td:not(:first-child){width:25.33%}\n"
+"@media (prefers-color-scheme: dark) {\n"
+"    :root {\n"
+"      color-scheme: dark;\n"
+"      --ink: #edf1f7; --muted: #aab4c3; --line: #3a4352;\n"
+"      --page: #141922; --card: #202734;\n"
+"    }\n"
+"    body { background:var(--page); color:var(--ink); }\n"
+"    .tile:hover:not(:disabled), .tile:focus-visible:not(:disabled) { background:#252e3c; outline-color:#536b9e; }\n"
+"    .data-connection, .cell-table-wrap, .about-link-row { background:#202734; color:var(--ink); }\n"
+"    .detail-head { background:#202734; color:var(--ink); border-bottom:1px solid var(--line); }\n"
+"    .metric, .telemetry-item { background:#202734; border-color:#3a4352; box-shadow:none; }\n"
+"    .telemetry-item { background:linear-gradient(145deg,#222b39,#1c232f); }\n"
+"    .telemetry-label { color:#b7c1d0; }\n"
+"    .telemetry-value { color:#f1f4f9; }\n"
+"    .telemetry-unit { color:#aab4c3; }\n"
+"    .field-tag { background:#303a4a; color:#c4cedc; }\n"
+"    .field-tag.estimated { background:#493b1d; color:#f2cf75; }\n"
+"    .field-tag.hypothesis { background:#3b2b50; color:#d7b7ff; }\n"
+"    .field-tag.rarely-seen { background:#263c5d; color:#b8d2ff; }\n"
+"    .cell-table th { background:#2b3545; color:#d5deeb; }\n"
+"    .cell-table td { border-top-color:#394252; }\n"
+"    .cell-table tbody tr:nth-child(even) { background:#1b222d; }\n"
+"    .cell-name { color:#9dbaff; }\n"
+"    .group-title .group-symbol, .about-link-icon { background:#303a4a; color:#dce5f3; }\n"
+"    .about-hero { background:linear-gradient(135deg,#27334b,#252c3b 55%,#1d3934); }\n"
+"    .about-link-placeholder { background:#303846; color:#c1cad7; }\n"
+"    .empty-state { background:#20273480; border-color:#465165; }\n"
+"    .detail-body > .prototype-note { background:#382f1d; color:#e8d29b; }\n"
+"    .scooter-placeholder { background:linear-gradient(145deg,rgba(160,180,205,.12),rgba(160,180,205,.04)); }\n"
+"  }\n"
 "  .diagnostic-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 18px}\n"
 "  .diagnostic-tab{border:1px solid var(--border);background:var(--card);color:var(--ink);border-radius:12px;padding:10px 12px;font-weight:650;cursor:pointer}\n"
 "  .diagnostic-tab.active{background:var(--blue);border-color:var(--blue);color:#fff}\n"
@@ -262,7 +298,13 @@ const char htmlPage[] PROGMEM =
 "  .diag-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:14px;margin-top:16px}\n"
 "  .diag-metric{border:1px solid var(--border);border-radius:12px;padding:11px;min-width:0}\n"
 "  .diag-metric span{display:block;color:var(--muted);font-size:12px;margin-bottom:5px}\n"
-"  .diag-metric strong{font-size:17px;overflow-wrap:anywhere}\n  .diag-metric.diag-activity-row{display:flex;align-items:center;justify-content:space-between;gap:14px;border:0;border-bottom:1px solid var(--border);border-radius:0;padding:12px 0;min-height:48px}\n  .diag-metric.diag-activity-row span{font-size:16px;color:var(--ink);margin:0;flex:1}\n  .diag-metric.diag-activity-row strong{font-size:13px;line-height:1.2;white-space:nowrap;overflow-wrap:normal;border-radius:999px;padding:6px 12px;background:var(--muted-bg);color:var(--muted);text-align:center;min-width:112px}\n  .diag-metric.diag-activity-row strong.status-active{background:color-mix(in srgb,#18a765 14%,var(--card));color:#087443}\n  .diag-metric.diag-activity-row strong.status-inactive{background:color-mix(in srgb,#89919d 16%,var(--card));color:#737b87}\n  @media(max-width:520px){.diag-metric.diag-activity-row{gap:8px}.diag-metric.diag-activity-row span{font-size:14px}.diag-metric.diag-activity-row strong{min-width:100px;padding:6px 9px}}\n"
+"  .diag-metric strong{font-size:17px;overflow-wrap:anywhere}\n"
+"  .diag-metric.diag-activity-row{display:flex;align-items:center;justify-content:space-between;gap:14px;border:0;border-bottom:1px solid var(--border);border-radius:0;padding:12px 0;min-height:48px}\n"
+"  .diag-metric.diag-activity-row span{font-size:16px;color:var(--ink);margin:0;flex:1}\n"
+"  .diag-metric.diag-activity-row strong{font-size:13px;line-height:1.2;white-space:nowrap;overflow-wrap:normal;border-radius:999px;padding:6px 12px;background:var(--muted-bg);color:var(--muted);text-align:center;min-width:112px}\n"
+"  .diag-metric.diag-activity-row strong.status-active{background:color-mix(in srgb,#18a765 14%,var(--card));color:#087443}\n"
+"  .diag-metric.diag-activity-row strong.status-inactive{background:color-mix(in srgb,#89919d 16%,var(--card));color:#737b87}\n"
+"  @media(max-width:520px){.diag-metric.diag-activity-row{gap:8px}.diag-metric.diag-activity-row span{font-size:14px}.diag-metric.diag-activity-row strong{min-width:100px;padding:6px 9px}}\n"
 "  .diag-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}\n"
 "  .diag-actions button{border:0;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer;background:var(--blue);color:white}\n"
 "  .diag-actions button.secondary{background:var(--blue-dark)}\n"
@@ -343,36 +385,11 @@ const char htmlPage[] PROGMEM =
 "    {title:'Switches & rider controls', symbol:'🎛️', accent:'#4778d0', fields:[\n"
 "      ['Key switch','🔑','—',''],['Start switch','▶️','—',''],['Kill switch','⏹️','—',''],['Storage switch','🧰','—',''],['Parking assistant','🅿️','—',''],['Nav joystick','🕹️','—','','hypothesis'],['Front brake','🖐️','—',''],['Rear brake','🖐️','—',''],['High beam','💡','—',''],['Horn','📣','—',''],['Left indicator','⬅️','—',''],['Right indicator','➡️','—',''],['Center indicator','🔘','—',''],['Indicators','↔️','—',''],['Blinkers','🚦','—',''],['Side stand','🦶','—',''],['Seat lock','🔒','—','']\n"
 "    ]},\n"
-"    {title:'Vehicle IMU Details', symbol:'📐', accent:'#4778d0', fields:["
-"      ['IMU acceleration X','📐','—','m/s²'],['IMU acceleration Y','📐','—','m/s²'],['IMU acceleration Z','📐','—','m/s²']"
-"    ]},"
-"    {title:'Vehicle Orientation', symbol:'🧭', accent:'#4778d0', fields:["
-"      ['Pitch','↕️','—','°'],['Roll','↪️','—','°'],['Heading','🧭','—','°']"
-"    ]},"
-"  ],"
-"  cells: [\n"
+"    {title:'Vehicle IMU Details', symbol:'📐', accent:'#4778d0', fields:[      ['IMU acceleration X','📐','—','m/s²'],['IMU acceleration Y','📐','—','m/s²'],['IMU acceleration Z','📐','—','m/s²']    ]},    {title:'Vehicle Orientation', symbol:'🧭', accent:'#4778d0', fields:[      ['Pitch','↕️','—','°'],['Roll','↪️','—','°'],['Heading','🧭','—','°']    ]},  ],  cells: [\n"
 "    {title:'Pack & cell summary', symbol:'🔋', accent:'#23945d', fields:[\n"
-"      ['SoC (BMS, raw)','🔋','—','%'],['SoC (dashboard estimate)','🔋','—','%','estimated'],['Minimum cell voltage','📉','—','V'],['Maximum cell voltage','📈','—','V'],['Cell voltage imbalance','⚖️','—','mV','estimated'],['Delta SoC','↔️','—','%'],['Cell temperature Probe 1','🌡️','—','°C'],['Cell temperature Probe 2','🌡️','—','°C'],['Cell temperature Probe 3','🌡️','—','°C'],['Cell temperature Probe 4','🌡️','—','°C'],['Cell temperature Probe 5','🌡️','—','°C','rarely-seen']"
-"    ]}\n"
+"      ['SoC (BMS, raw)','🔋','—','%'],['SoC (dashboard estimate)','🔋','—','%','estimated'],['Minimum cell voltage','📉','—','V'],['Maximum cell voltage','📈','—','V'],['Cell voltage imbalance','⚖️','—','mV','estimated'],['Delta SoC','↔️','—','%'],['Cell temperature Probe 1','🌡️','—','°C'],['Cell temperature Probe 2','🌡️','—','°C'],['Cell temperature Probe 3','🌡️','—','°C'],['Cell temperature Probe 4','🌡️','—','°C'],['Cell temperature Probe 5','🌡️','—','°C','rarely-seen']    ]}\n"
 "  ],\n"
-"  bms: ["
-"    {title:'Battery pack health', symbol:'🔋', accent:'#8b5cc7', fields:["
-"      ['SoC (BMS, raw)','🔋','—','%'],['SoC (dashboard estimate)','🔋','—','%','estimated'],['Pack state of health','🩺','—','%'],['Delta SoC','↔️','—','%'],['Pack voltage','⚡','—','V'],['Pack current','〰️','—','A'],['Balancing state','⚖️','—',''],['SoE (State of Energy)','🔌','—','%'],['SoC (EKF estimate)','🧮','—','%'],['Min SoC (BMS)','📉','—','%'],['Max SoC (BMS)','📈','—','%'],['Minimum cell voltage','📉','—','V'],['Maximum cell voltage','📈','—','V']"
-"    ]},"
-"    {title:'Current limits & charging', symbol:'🔌', accent:'#8b5cc7', fields:["
-"      ['Derated discharge current','⬇️','—','A'],['Derated charge current','⬆️','—','A'],['Derated regenerative current','♻️','—','A'],['Temperature-based discharge limit','🌡️','—','A']"
-"    ]},"
-"    {title:'BMS diagnostics & identity', symbol:'🛡️', accent:'#8b5cc7', fields:["
-"      ['AFE die temperature','🌡️','—','°C'],['BMS uptime','⏱️','—',''],['BMS hardware version','🧩','—',''],['Battery identification','🔖','—','']"
-"    ]},"
-"    {title:'Charging Algorithm Limit', symbol:'⚖️', accent:'#8b5cc7', fields:["
-"      ['Cell rule charge limit','⚖️','—','A'],['Rate-limited charge current','⚖️','—','A'],['Post-quantizer charge value','⚖️','—','A']"
-"    ]},"
-"    {title:'Internal Reference Voltages', symbol:'🔌', accent:'#8b5cc7', fields:["
-"      ['Board temperature reference voltage','🔌','—','V'],['VREF2','🔌','—','V'],['VREF3','🔌','—','V'],['MOSFET power voltage','🔌','—','V'],['AFE regulator voltage','🔌','—','V']"
-"    ]},"
-"  ],"
-"  motor: [\n"
+"  bms: [    {title:'Battery pack health', symbol:'🔋', accent:'#8b5cc7', fields:[      ['SoC (BMS, raw)','🔋','—','%'],['SoC (dashboard estimate)','🔋','—','%','estimated'],['Pack state of health','🩺','—','%'],['Delta SoC','↔️','—','%'],['Pack voltage','⚡','—','V'],['Pack current','〰️','—','A'],['Balancing state','⚖️','—',''],['SoE (State of Energy)','🔌','—','%'],['SoC (EKF estimate)','🧮','—','%'],['Min SoC (BMS)','📉','—','%'],['Max SoC (BMS)','📈','—','%'],['Minimum cell voltage','📉','—','V'],['Maximum cell voltage','📈','—','V']    ]},    {title:'Current limits & charging', symbol:'🔌', accent:'#8b5cc7', fields:[      ['Derated discharge current','⬇️','—','A'],['Derated charge current','⬆️','—','A'],['Derated regenerative current','♻️','—','A'],['Temperature-based discharge limit','🌡️','—','A']    ]},    {title:'BMS diagnostics & identity', symbol:'🛡️', accent:'#8b5cc7', fields:[      ['AFE die temperature','🌡️','—','°C'],['BMS uptime','⏱️','—',''],['BMS hardware version','🧩','—',''],['Battery identification','🔖','—','']    ]},    {title:'Charging Algorithm Limit', symbol:'⚖️', accent:'#8b5cc7', fields:[      ['Cell rule charge limit','⚖️','—','A'],['Rate-limited charge current','⚖️','—','A'],['Post-quantizer charge value','⚖️','—','A']    ]},    {title:'Internal Reference Voltages', symbol:'🔌', accent:'#8b5cc7', fields:[      ['Board temperature reference voltage','🔌','—','V'],['VREF2','🔌','—','V'],['VREF3','🔌','—','V'],['MOSFET power voltage','🔌','—','V'],['AFE regulator voltage','🔌','—','V']    ]},  ],  motor: [\n"
 "    {title:'Motor & controller telemetry', symbol:'⚙️', accent:'#c56a30', fields:[\n"
 "      ['Motor current','〰️','—','A'],['Motor temperature','🌡️','—','°C'],['Controller temperature','🌡️','—','°C'],['Motor MCU temperature','🧠','—','°C'],['Throttle','🎚️','—','',''],['Traction-control RPM','🔄','—','RPM','hypothesis'],['Motor RPM (motor-control, not wheel speed)','🔄','—','RPM','estimated'],['Motor firmware','💾','—','']\n"
 "    ]}\n"
@@ -497,7 +514,6 @@ const char htmlPage[] PROGMEM =
 "  if(dc>6000) return 'Yes, Full Support';\n"
 "  return 'Partial';\n"
 "}\n"
-
 "function updateLiveMetrics(){\n"
 " const d=liveData.data||{},c=liveData.cells||{},ch=liveData.charger||{},e=liveData.extra||{};\n"
 " const cv=Array.isArray(c.v)?c.v.map(Number).filter(n=>Number.isFinite(n)&&n>0):[];\n"
@@ -605,7 +621,6 @@ const char htmlPage[] PROGMEM =
 "  if(isFresh){\n"
 "   updateLiveMetrics();\n"
 "   if(selected==='diagnostic'){diagRenderMetrics();diagUpdateRecorderUI();}\n"
-
 "   document.getElementById('dataConnection').className='data-connection connected';\n"
 "   document.getElementById('connectionTitle').textContent=age>=CAN_DEGRADED_TIMEOUT_MS?'CAN data intermittent':'CAN data connected';\n"
 "   document.getElementById('connectionMessage').textContent='Last CAN frame '+(age<1000?age+' ms ago':(age/1000).toFixed(1)+' s ago')+'.';\n"
@@ -645,6 +660,17 @@ const char htmlPage[] PROGMEM =
 "    mb.addEventListener('click', () => { openCategory(cat.id); menu.classList.remove('open'); document.getElementById('menuToggle').setAttribute('aria-expanded','false'); });\n"
 "    menu.appendChild(mb);\n"
 "  });\n"
+"  // Firmware Update is a standalone utility shortcut, not a CAN category.\n"
+"  const updateItem = {label:'Firmware Update', cls:'update', icon:'<path d=\"M12 16V4m0 0L7 9m5-5 5 5\"/><path d=\"M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4\"/>'};\n"
+"  const updateTile = document.createElement('button');\n"
+"  updateTile.className = 'tile'; updateTile.type = 'button'; updateTile.dataset.action = 'ota';\n"
+"  updateTile.innerHTML = `<span class=\"tile-icon ${updateItem.cls}\">${iconMarkup(updateItem)}</span><span class=\"tile-label\">${updateItem.label}</span>`;\n"
+"  updateTile.addEventListener('click', () => { window.location.href = '/ota'; });\n"
+"  tiles.appendChild(updateTile);\n"
+"  const updateMenu = document.createElement('button');\n"
+"  updateMenu.type = 'button'; updateMenu.textContent = updateItem.label; updateMenu.dataset.action = 'ota';\n"
+"  updateMenu.addEventListener('click', () => { window.location.href = '/ota'; });\n"
+"  menu.appendChild(updateMenu);\n"
 "  updateStatus(mode);\n"
 "}\n"
 "let scooterAnimatedSrc = null;\n"
@@ -674,7 +700,7 @@ const char htmlPage[] PROGMEM =
 "  setScooterAnimationState(mode);\n"
 "  statusText.textContent = mode === 'online' ? 'ONLINE' : mode === 'amber' ? 'CAN ACTIVITY INTERMITTENT' : 'OFFLINE';\n"
 "  const enabled = mode !== 'offline';\n"
-"  document.querySelectorAll('.tile, .menu button').forEach(btn => btn.disabled = !enabled);\n"
+"  document.querySelectorAll('.tile:not([data-action=\"ota\"]), .menu button:not([data-action=\"ota\"])').forEach(btn => btn.disabled = !enabled);\n"
 "  document.getElementById('menuToggle').disabled = !enabled;\n"
 "  document.getElementById('backButton').disabled = !enabled;\n"
 "  availabilityText.textContent = mode === 'online'\n"
@@ -913,10 +939,9 @@ const char htmlPage[] PROGMEM =
 "function diagMetric(label,value,unit=''){\n"
 " const n=diagNum(value);\n"
 " const display=(value===undefined||value===null||value==='')?'Unavailable':(typeof value==='boolean'?(value?'Active':'Inactive'):(n!==null?diagFmt(n,unit):String(value)));\n"
- " const state=String(display).trim().toLowerCase();\n"
+" const state=String(display).trim().toLowerCase();\n"
 " const statusClass=(state==='active'||state==='active / on'||state==='on')?'status-active':(state==='inactive'||state==='inactive / off'||state==='off')?'status-inactive':'';\n"
 " return `<div class=\\\"diag-metric\\\"><span>${label}</span><strong class=\\\"${statusClass}\\\">${display}</strong></div>`;\n"
-
 "}\n"
 "function diagCurrentValues(id){\n"
 " const {d,c,ch,x}=diagGet();\n"
@@ -973,7 +998,8 @@ const char htmlPage[] PROGMEM =
 "  let value=v[k]; let unit='';\n"
 "  if(['soc','soh','socEkf','soe','deltaSoc','maxSoc','humidity','chargeSocLimit','cellSohMin','cellSohMax','cellSocMin','cellSocMax','dashboardSocEstimate'].includes(k))unit='%';\n"
 "  if(['packVoltage','cellVoltageMin','cellVoltageMax','cellVoltageSpread','imbalance','chargerInputVoltage','chargerOutputVoltage','pduVoltage'].includes(k))unit=' V';\n"
-"  if(k==='chargerIref')unit=' A';\n  if(['motorTemp','controllerTemp','motorMcuTemp','cellTempMin','cellTempMax','cellTempDelta','afeDieTemp','bmsAmbient','dischargeLimitTemp'].includes(k))unit=' °C';\n"
+"  if(k==='chargerIref')unit=' A';\n"
+"  if(['motorTemp','controllerTemp','motorMcuTemp','cellTempMin','cellTempMax','cellTempDelta','afeDieTemp','bmsAmbient','dischargeLimitTemp'].includes(k))unit=' °C';\n"
 "  if(k==='canAgeMs'||k==='diagAgeMs'||k==='vinAgeMs'||k==='sidAgeMs')unit=' ms';\n"
 "  if(k==='odo')unit=' km';if(k==='speedKmh')unit=' km/h';if(k==='motorRpmAbs')unit=' RPM';\n"
 "  if(typeof value==='boolean')value=value?'Active':'Inactive';\n"
@@ -1246,8 +1272,7 @@ const char htmlPage[] PROGMEM =
 "</script>\n"
 "</body>\n"
 "</html>\n"
-"\n"
-;
+"\n";
 
 
 
@@ -1341,6 +1366,100 @@ static void identityTick(){
   xSemaphoreGive(mtx);
 }
 // ===== IDENTITY END =====
+
+
+// ===== OTA firmware update (separate from CAN/telemetry logic) =====
+static const char otaPage[] PROGMEM = R"OTAHTML(
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Firmware Update | VCD Tool</title>
+<style>
+:root{color-scheme:light;--ink:#20242b;--muted:#6d7685;--line:#dce2ec;--blue:#2f52ad;--green:#16834c}
+*{box-sizing:border-box}body{margin:0;background:#f4f6fa;color:var(--ink);font:15px system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:620px;margin:7vh auto;padding:20px}.card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:clamp(20px,5vw,32px);box-shadow:0 12px 35px #1b315010}
+.head{display:flex;align-items:center;gap:14px;margin-bottom:24px}.ico{width:52px;height:52px;border-radius:15px;background:#e2f5e9;color:#167746;display:grid;place-items:center}.ico svg{width:27px;height:27px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+h1{font-size:23px;margin:0 0 4px}p{color:var(--muted);line-height:1.55}.field{display:block;border:1.5px dashed #aab7cb;border-radius:14px;padding:18px;margin:22px 0;background:#fafbfd}
+input[type=file]{width:100%;font:inherit}.btn{width:100%;border:0;border-radius:12px;background:var(--blue);color:white;padding:14px 18px;font:600 15px system-ui;cursor:pointer}.btn:disabled{opacity:.55;cursor:wait}
+.progress{height:10px;background:#e9edf4;border-radius:99px;overflow:hidden;margin-top:18px;display:none}.bar{height:100%;width:0;background:#20a464;transition:width .15s}.status{margin-top:14px;min-height:24px;font-weight:600}.hint{font-size:13px}.back{display:inline-block;margin-top:20px;color:var(--blue);text-decoration:none;font-weight:600}
+</style>
+</head>
+<body><main class="wrap"><section class="card">
+<div class="head"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5 5 5"/><path d="M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg></div>
+<div><h1>Firmware Update</h1><div class="hint">VCD Tool · ESP32-C3</div></div></div>
+<p>Select the compiled ESP32-C3 <b>.bin</b> firmware file. Keep the device powered and do not close this page during installation.</p>
+<form id="form"><label class="field"><b>Firmware binary (.bin)</b><br><br><input id="file" type="file" accept=".bin,application/octet-stream" required></label>
+<button class="btn" id="submit" type="submit">Upload and install firmware</button></form>
+<div class="progress" id="progress"><div class="bar" id="bar"></div></div><div class="status" id="status" role="status"></div>
+<p class="hint">The device will restart automatically after a successful update. Reconnect to the VCD-Tool Wi-Fi network after it restarts.</p>
+<a class="back" href="/">← Back to dashboard</a>
+</section></main>
+<script>
+const form=document.getElementById('form'),file=document.getElementById('file'),btn=document.getElementById('submit'),statusEl=document.getElementById('status'),progress=document.getElementById('progress'),bar=document.getElementById('bar');
+form.addEventListener('submit',e=>{e.preventDefault();const f=file.files[0];if(!f){statusEl.textContent='Please select a .bin file.';return;}if(!/\.bin$/i.test(f.name)){statusEl.textContent='Please choose an ESP32 .bin firmware file.';return;}
+if(!confirm('Install this firmware and restart the ESP32-C3?'))return;
+const data=new FormData();data.append('firmware',f,f.name);const xhr=new XMLHttpRequest();xhr.open('POST','/update');btn.disabled=true;btn.textContent='Uploading…';progress.style.display='block';statusEl.textContent='Uploading firmware…';
+xhr.upload.onprogress=e=>{if(e.lengthComputable){const n=Math.round(e.loaded/e.total*100);bar.style.width=n+'%';statusEl.textContent='Uploading: '+n+'%';}};
+xhr.onload=()=>{if(xhr.status===200){bar.style.width='100%';statusEl.textContent='Firmware installed. Device is restarting…';btn.textContent='Restarting…';}else{statusEl.textContent='Update failed: '+(xhr.responseText||'HTTP '+xhr.status);btn.disabled=false;btn.textContent='Try again';}};
+xhr.onerror=()=>{statusEl.textContent='Connection lost during upload. Check device status before retrying.';btn.disabled=false;btn.textContent='Try again';};xhr.send(data);
+});
+</script></body></html>
+)OTAHTML";
+
+static bool otaUploadOk = false;
+static bool otaUploadStarted = false;
+
+void handleOtaPage(){
+  server.send_P(200, "text/html; charset=utf-8", otaPage);
+}
+
+void handleOtaUploadStream(){
+  HTTPUpload& upload = server.upload();
+  if(upload.status == UPLOAD_FILE_START){
+    otaUploadStarted = false;
+    otaUploadOk = false;
+    String otaFilename = upload.filename;
+    otaFilename.toLowerCase();
+    if(otaFilename.length() == 0 || !otaFilename.endsWith(".bin")) return;
+    if(!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)){
+      Update.printError(Serial);
+      return;
+    }
+    otaUploadStarted = true;
+  } else if(upload.status == UPLOAD_FILE_WRITE){
+    if(otaUploadStarted && Update.write(upload.buf, upload.currentSize) != upload.currentSize){
+      Update.printError(Serial);
+      otaUploadStarted = false;
+      Update.abort();
+    }
+  } else if(upload.status == UPLOAD_FILE_END){
+    if(otaUploadStarted && Update.end(true)){
+      otaUploadOk = true;
+      Serial.printf("OTA update complete: %u bytes\\n", upload.totalSize);
+    } else {
+      Update.printError(Serial);
+      otaUploadOk = false;
+    }
+    otaUploadStarted = false;
+  } else if(upload.status == UPLOAD_FILE_ABORTED){
+    if(otaUploadStarted) Update.abort();
+    otaUploadStarted = false;
+    otaUploadOk = false;
+  }
+}
+
+void handleOtaUploadResult(){
+  if(otaUploadOk && !Update.hasError()){
+    server.send(200, "text/plain", "Firmware installed. Restarting device...");
+    delay(700);
+    ESP.restart();
+  } else {
+    server.send(500, "text/plain", "Firmware update failed. Check the selected .bin file and available OTA partition space.");
+  }
+}
+// ===== end OTA firmware update =====
 
 void handleRoot(){ server.send_P(200, "text/html; charset=utf-8", htmlPage); }
 char jsonBuf[512];
@@ -1634,7 +1753,7 @@ void setup(){
   WiFi.persistent(false); WiFi.disconnect(true,true); delay(200);
   WiFi.mode(WIFI_AP); delay(200);
   WiFi.softAP(AP_SSID,AP_PASS,6,0,4); WiFi.setTxPower(WIFI_POWER_8_5dBm);
-  server.on("/",handleRoot); server.on("/data",handleData); server.on("/cells",handleCells); server.on("/charger",handleCharger); server.on("/extra",handleExtra); server.begin();
+  server.on("/",handleRoot); server.on("/data",handleData); server.on("/cells",handleCells); server.on("/charger",handleCharger); server.on("/extra",handleExtra); server.on("/ota",HTTP_GET,handleOtaPage); server.on("/update",HTTP_POST,handleOtaUploadResult,handleOtaUploadStream); server.begin();
   setupCAN();
   mtx = xSemaphoreCreateMutex();
   xTaskCreatePinnedToCore(canTask,"can",4096,NULL,2,NULL,0);
