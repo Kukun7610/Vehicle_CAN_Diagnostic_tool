@@ -57,7 +57,7 @@ DIY complete video guide : [VCD Tool Guide: DIY hardware build](https://youtu.be
 
 > 📌 **TX/RX are crossed by design.** The ESP32's *TX* pin goes to the transceiver's *TX input* (`CTX`) and the ESP32's *RX* pin to the transceiver's *RX output* (`CRX`). Module silk-screens vary (`TXD`/`RXD`, `D`/`R`, `CTX`/`CRX`); match them by function.
 
-### 1.3 Wiring diagram
+### 1.3 Wiring diagram (ESP32-C3 Super Mini)
  ![Finished wiring](images/wiring-photo.png)
  
 ```text
@@ -112,7 +112,12 @@ flowchart LR
 
  
 
-#### For ESP32-WROOM
+
+
+### 1.3 Wiring diagram (WROOM-32)
+ ![Finished wiring](images/diagram-wroom-esp32.png)
+
+ #### For ESP32-WROOM
 
 **ESP32-WROOM 32 ⇄ SN65HVD230**
 
@@ -132,9 +137,6 @@ flowchart LR
 
 > 📌 **TX/RX are crossed by design.** The ESP32's *TX* pin goes to the transceiver's *TX input* (`CTX`) and the ESP32's *RX* pin to the transceiver's *RX output* (`CRX`). Module silk-screens vary (`TXD`/`RXD`, `D`/`R`, `CTX`/`CRX`); match them by function.
 
-### 1.3 Wiring diagram
- ![Finished wiring](images/diagram-wroom-esp32.png)
- 
 ```text
         ┌──────────────────────┐                     ┌────────────────────────┐
         │   ESP32-WROOM        │                     │   SN65HVD230 module    │
@@ -188,6 +190,81 @@ flowchart LR
  ![Finished wiring](images/diagram-wroom-esp32.png)
  ![Vehicle connector pinout](images/connector-pinout.png)
 
+### 1.3 Wiring diagram (YD-ESP32-S3-N16R8)
+ ![Finished wiring](images/YD-ESP32-S3-N16R8.png)
+
+#### For YD-ESP32-S3-N16R8
+
+**YD-ESP32-S3-N16R8 ⇄ SN65HVD230**
+
+| YD-ESP32-S3-N16R8 pin | SN65HVD230 pin | Wire (suggested) | Purpose |
+|---|---|---|---|
+| `3V3` | `3V3` (VCC) | 🔴 Red | Power for transceiver |
+| `GND` | `GND` | ⚫ Black | Common ground |
+| `GPIO 15` | `CTX` (TXD / D) | 🟠 Orange | CAN transmit line |
+| `GPIO 16` | `CRX` (RXD / R) | 🔵 Blue | CAN receive line |
+
+**SN65HVD230 ⇄ Vehicle diagnostic connector**
+
+| SN65HVD230 pin | Vehicle connector | Wire (suggested) |
+|---|---|---|
+| `CANH` | CAN-H pin | 🟡 Yellow |
+| `CANL` | CAN-L pin | 🟢 Green |
+
+> 📌 **TX/RX are crossed by design.** The ESP32's *TX* pin goes to the transceiver's *TX input* (`CTX`) and the ESP32's *RX* pin to the transceiver's *RX output* (`CRX`). Module silk-screens vary (`TXD`/`RXD`, `D`/`R`, `CTX`/`CRX`); match them by function.
+ 
+```text
+        ┌──────────────────────┐                     ┌────────────────────────┐
+        │   YD-ESP32-S3-N16R8  │                     │   SN65HVD230 module    │
+        │                      │                     │                        │
+        │   3V3  ●─────────────┼──────── red ────────┼─● 3V3                  │
+        │   GND  ●─────────────┼──────── black ──────┼─● GND                  │
+        │   GPIO15 (TX) ●──────┼──────── orange ─────┼─● CTX                  │
+        │   GPIO16 (RX) ●──────┼──────── blue  ──────┼─● CRX                  │
+        │                      │                     │                        │
+        │   [USB-C] ← power    │                     │   CANH ●───────────┐   │
+        └──────────────────────┘                     │   CANL ●────────┐  │   │
+                                                     └─────────────────┼──┼───┘
+                                                                       │  │
+                                                 green (CAN-L) ────────┘  │
+                                                  yellow (CAN-H) ─────────┘
+                                                                       │  │
+                                                             ┌─────────▼──▼────────┐
+                                                             │  Vehicle diagnostic │
+                                                             │  connector (boot)   │
+                                                             └─────────────────────┘
+```
+
+```mermaid
+flowchart LR
+    subgraph ESP[YD-ESP32-S3-N16R8]
+        A3[3V3]
+        AG[GND]
+        AT[GPIO 15 - TX]
+        AR[GPIO 16 - RX]
+    end
+    subgraph CAN[SN65HVD230]
+        C3[3V3]
+        CG[GND]
+        CT[CTX]
+        CR[CRX]
+        CH[CANH]
+        CL[CANL]
+    end
+    subgraph VEH[Vehicle connector]
+        VH[CAN-H]
+        VL[CAN-L]
+    end
+    A3 --- C3
+    AG --- CG
+    AT --- CT
+    AR --- CR
+    CH --- VH
+    CL --- VL
+```
+
+ ![Vehicle connector pinout](images/connector-pinout.png)
+
 
 ### 1.4 Wiring checklist
 
@@ -227,11 +304,11 @@ To run **VCD Tool** on it:
 ## 3. Flashing the firmware
 Two way to flash
 ### 3.1 With ESP Flasher
-1. Download the latest `VCD_Tool_C3.bin` or `VCD_Tool_WROOM32.bin` file from [Releases](https://github.com/Kukun7610/Vehicle_CAN_Diagnostic_tool/releases)
+1. Download the latest `VCD_Tool_C3.bin` or `VCD_Tool_WROOM32.bin` or `VCD_Tool_YD-ESP32-S3-N16R8.bin` file from [Releases](https://github.com/Kukun7610/Vehicle_CAN_Diagnostic_tool/releases)
 2. Connect your ESP module to your PC/Laptop via USB.
 3. Open the **ESP Flasher** application.
 4. Select the correct COM/Serial port your ESP32 is connected to.
-5. Select the proper ESP32 File `VCD_Tool_C3.bin` for ESP32-C3 & `VCD_Tool_WROOM32.bin` for ESP32-WROOM module file and click **Flash**.
+5. Select the proper ESP32 File `VCD_Tool_C3.bin` for ESP32-C3 & `VCD_Tool_WROOM32.bin` for ESP32-WROOM module & `VCD_Tool_YD-ESP32-S3-N16R8.bin` for YD-ESP32-S3-N16R8 file and click **Flash**.
 6. Wait a minute for the process to complete, then disconnect and reconnect the ESP32 to restart it.
 7. On your phone, look for a Wi-Fi network named **`VCD-Tool`**. If it appears, flashing worked ✅.
 
